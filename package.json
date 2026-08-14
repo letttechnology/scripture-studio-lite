@@ -1,0 +1,66 @@
+{
+  "name": "scripture-studio",
+  "private": true,
+  "version": "0.1.0-beta.1",
+  "description": "Scripture Studio LITE - Deep Dive Into Scripture",
+  "author": "Scripture Studio",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "clean": "node -e \"const fs=require('fs'); if(fs.existsSync('dist')) fs.rmSync('dist',{recursive:true,force:true});\"",
+    "build:windows": "npm run clean && npx electron-builder --win",
+    "build:mac": "npm run clean && npx electron-builder --mac",
+    "build:linux": "npm run clean && npx electron-builder --linux",
+    "build:all": "npm run clean && npx electron-builder -mwl"
+  },
+  "build": {
+    "appId": "com.scripturestudio.lite",
+    "productName": "Scripture Studio LITE",
+    "publish": null,
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "index.html"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Scripture Studio LITE"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.education"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  },
+  "dependencies": {
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "30.0.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.6"
+  }
+}

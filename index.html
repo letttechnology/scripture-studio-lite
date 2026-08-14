@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Scripture Studio LITE | Deep Dive into Scripture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #121212;
+      --bg-secondary: #1a1a1a;
+      --accent-orange: #ff6b35;
+      --accent-yellow: #ffd166;
+      --accent-blue: #4cc9f0;
+      --accent-green: #06d6a0;
+      --text-main: #f0f0f0;
+      --text-muted: #888888;
+      --border-color: #2a2a2a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 14px;
+      height: 38px;
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      z-index: 100;
+      gap: 10px;
+    }
+
+    .studio-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent-orange);
+      white-space: nowrap;
+    }
+
+    .studio-badge {
+      background: rgba(255, 107, 53, 0.15);
+      color: var(--accent-orange);
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 107, 53, 0.3);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+
+    select, button, input {
+      font-family: inherit;
+    }
+
+    .text-input, .select-input {
+      background: #242424;
+      color: #ffffff;
+      border: 1px solid #3d3d3d;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      height: 26px;
+    }
+
+    .btn-action {
+      background: #2a2a2a;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 3px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+
+    .btn-action:hover {
+      background: #383838;
+    }
+
+    .viewport-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+    }
+
+    .site-frame {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      z-index: 1;
+      transition: filter 0.3s ease;
+    }
+
+    .site-frame.dark-mode {
+      filter: invert(0.92) hue-rotate(180deg) contrast(1.1);
+    }
+
+    .drawing-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      cursor: crosshair;
+    }
+
+    .drawing-canvas.interact-mode {
+      pointer-events: none;
+    }
+
+    .drawing-canvas.eraser {
+      cursor: cell;
+    }
+
+    .bottom-toolbar {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(24, 24, 24, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      padding: 4px 12px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      z-index: 200;
+    }
+
+    .tool-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 5px 8px;
+      border-radius: 16px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .tool-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .tool-btn.active {
+      color: #ffffff;
+      background: var(--accent-orange);
+      box-shadow: 0 0 10px rgba(255, 107, 53, 0.4);
+    }
+
+    .tool-btn.interact-active {
+      color: #ffffff;
+      background: var(--accent-blue);
+      box-shadow: 0 0 10px rgba(76, 201, 240, 0.4);
+    }
+
+    .divider {
+      width: 1px;
+      height: 18px;
+      background-color: rgba(255, 255, 255, 0.15);
+      margin: 0 2px;
+    }
+
+    .color-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    .color-dot:hover {
+      transform: scale(1.15);
+    }
+
+    .color-dot.active {
+      border-color: #ffffff;
+      transform: scale(1.25);
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .rec-btn {
+      background: rgba(255, 77, 77, 0.15);
+      color: #ff4d4d;
+      border: 1px solid rgba(255, 77, 77, 0.4);
+      padding: 5px 12px;
+      border-radius: 16px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rec-btn.recording {
+      background: #ff4d4d;
+      color: #ffffff;
+      animation: pulse 1.5s infinite;
+    }
+
+    .pause-btn {
+      background: rgba(255, 209, 102, 0.15);
+      color: var(--accent-yellow);
+      border: 1px solid rgba(255, 209, 102, 0.4);
+      padding: 5px 10px;
+      border-radius: 16px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .pause-btn.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .pause-btn.paused {
+      background: var(--accent-yellow);
+      color: #121212;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-card {
+      background: #1e1e1e;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 700px;
+      width: 90%;
+      border: 1px solid #333;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header Bar -->
+    <div class="top-bar">
+      <div class="studio-title">
+        <span>📖 SCRIPTURE STUDIO LITE</span>
+        <span class="studio-badge">DEEP DIVE INTO SCRIPTURE</span>
+      </div>
+
+      <div class="controls-group">
+        <input type="text" id="urlInput" class="text-input" placeholder="http://localhost/read/romans/1" value="http://localhost/read/romans/1" style="width: 260px;" />
+        <button class="btn-action" id="loadUrlBtn">🌐 Load Website</button>
+
+        <select id="presetUrlSelect" class="select-input">
+          <option value="http://localhost/read/romans/1">Local Interlinear Romans 1</option>
+          <option value="http://localhost/read/hebrews/11">Local Interlinear Hebrews 11</option>
+          <option value="https://www.desiringgod.org/labs">Desiring God Labs</option>
+        </select>
+
+        <button class="btn-action" id="darkModeToggleBtn">🌙 Dark Filter</button>
+      </div>
+    </div>
+
+    <!-- Viewport Area -->
+    <div class="viewport-area">
+      <iframe id="siteFrame" class="site-frame" src="http://localhost/read/romans/1"></iframe>
+      <canvas id="drawCanvas" class="drawing-canvas"></canvas>
+    </div>
+
+    <!-- Bottom Toolbar -->
+    <div class="bottom-toolbar">
+      <button class="tool-btn interact-active" id="interactToggleBtn" title="Interact Mode (Scroll / Click Links)">
+        👆 Interact
+      </button>
+
+      <div class="divider"></div>
+
+      <button class="tool-btn" data-tool="pen">✏️ Pen</button>
+      <button class="tool-btn" data-tool="underline">➖ Line</button>
+      <button class="tool-btn" data-tool="circle">⭕ Circle</button>
+      <button class="tool-btn" data-tool="box">🔲 Box</button>
+      <button class="tool-btn" data-tool="arrow">↗️ Arrow</button>
+      <button class="tool-btn" data-tool="highlight">🖍️ Highlight</button>
+      <button class="tool-btn" data-tool="eraser">🧹 Eraser</button>
+
+      <div class="divider"></div>
+
+      <div class="color-dot active" data-color="#ff6b35" style="background-color: #ff6b35; color: #ff6b35;"></div>
+      <div class="color-dot" data-color="#ffd166" style="background-color: #ffd166; color: #ffd166;"></div>
+      <div class="color-dot" data-color="#4cc9f0" style="background-color: #4cc9f0; color: #4cc9f0;"></div>
+      <div class="color-dot" data-color="#06d6a0" style="background-color: #06d6a0; color: #06d6a0;"></div>
+      <div class="color-dot" data-color="#ffffff" style="background-color: #ffffff; color: #ffffff;"></div>
+
+      <div class="divider"></div>
+
+      <button class="tool-btn" id="undoBtn">↩️ Undo</button>
+      <button class="tool-btn" id="clearBtn">🗑️ Clear</button>
+
+      <div class="divider"></div>
+
+      <button class="rec-btn" id="recBtn">⏺️ Record Video</button>
+      <button class="pause-btn" id="pauseBtn">⏸️ Pause</button>
+    </div>
+  </div>
+
+  <!-- Video Preview Modal -->
+  <div id="videoModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <h2 style="color: #ff6b35; margin-bottom: 16px; font-family: 'Outfit', sans-serif;">Video Recording Complete!</h2>
+      <video id="previewVideo" controls style="width: 100%; border-radius: 8px; margin-bottom: 20px;"></video>
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button id="closeModalBtn" style="background: transparent; color: #aaa; border: 1px solid #444; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+        <a id="downloadLink" download="scripture-studio-recording.webm" style="background: #ff6b35; color: #fff; padding: 8px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">⬇️ Download Video</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isInteractMode = true;
+    let currentTool = 'pen';
+    let currentColor = '#ff6b35';
+    let currentWidth = 3;
+    let strokes = [];
+    let currentPoints = [];
+    let isDrawing = false;
+    let isDarkModeFiltered = false;
+
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+    const siteFrame = document.getElementById('siteFrame');
+    const interactToggleBtn = document.getElementById('interactToggleBtn');
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+      redraw();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 100);
+
+    function loadWebsiteUrl(url) {
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        url = "https://" + url;
+      }
+      siteFrame.src = url;
+    }
+
+    document.getElementById('loadUrlBtn').addEventListener('click', () => {
+      loadWebsiteUrl(document.getElementById('urlInput').value);
+    });
+
+    document.getElementById('presetUrlSelect').addEventListener('change', (e) => {
+      document.getElementById('urlInput').value = e.target.value;
+      loadWebsiteUrl(e.target.value);
+    });
+
+    // Dark Mode Filter
+    document.getElementById('darkModeToggleBtn').addEventListener('click', () => {
+      isDarkModeFiltered = !isDarkModeFiltered;
+      if (isDarkModeFiltered) {
+        siteFrame.classList.add('dark-mode');
+        document.getElementById('darkModeToggleBtn').style.background = '#ff6b35';
+      } else {
+        siteFrame.classList.remove('dark-mode');
+        document.getElementById('darkModeToggleBtn').style.background = '#2a2a2a';
+      }
+    });
+
+    function setInteractMode(interact) {
+      isInteractMode = interact;
+      if (isInteractMode) {
+        canvas.classList.add('interact-mode');
+        interactToggleBtn.classList.add('interact-active');
+        document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      } else {
+        canvas.classList.remove('interact-mode');
+        interactToggleBtn.classList.remove('interact-active');
+      }
+    }
+
+    interactToggleBtn.addEventListener('click', () => {
+      setInteractMode(true);
+    });
+
+    function renderStroke(s) {
+      if (!s.points || s.points.length === 0) return;
+      ctx.save();
+      ctx.strokeStyle = s.color;
+      ctx.fillStyle = s.color;
+      ctx.lineWidth = s.width;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.globalAlpha = s.opacity || 1;
+
+      if (s.tool === 'pen' || s.tool === 'highlight') {
+        ctx.beginPath();
+        ctx.moveTo(s.points[0].x, s.points[0].y);
+        for (let i = 1; i < s.points.length; i++) {
+          ctx.lineTo(s.points[i].x, s.points[i].y);
+        }
+        ctx.stroke();
+      } else if (s.tool === 'underline') {
+        const p1 = s.points[0];
+        const p2 = s.points[s.points.length - 1];
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p1.y);
+        ctx.stroke();
+      } else if (s.tool === 'circle') {
+        const p1 = s.points[0];
+        const p2 = s.points[s.points.length - 1];
+        const rx = Math.abs(p2.x - p1.x) / 2;
+        const ry = Math.abs(p2.y - p1.y) / 2;
+        const cx = Math.min(p1.x, p2.x) + rx;
+        const cy = Math.min(p1.y, p2.y) + ry;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, Math.max(rx, 10), Math.max(ry, 10), 0, 0, 2 * Math.PI);
+        ctx.stroke();
+      } else if (s.tool === 'box') {
+        const p1 = s.points[0];
+        const p2 = s.points[s.points.length - 1];
+        ctx.beginPath();
+        ctx.rect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+        ctx.stroke();
+      } else if (s.tool === 'arrow') {
+        const p1 = s.points[0];
+        const p2 = s.points[s.points.length - 1];
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(p2.x, p2.y);
+        ctx.lineTo(p2.x - 16 * Math.cos(angle - Math.PI / 6), p2.y - 16 * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(p2.x - 16 * Math.cos(angle + Math.PI / 6), p2.y - 16 * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function redraw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      strokes.forEach(renderStroke);
+      if (currentPoints.length > 0) {
+        renderStroke({
+          tool: currentTool,
+          color: currentColor,
+          width: currentWidth,
+          opacity: currentTool === 'highlight' ? 0.35 : 1,
+          points: currentPoints
+        });
+      }
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (isInteractMode) return;
+      canvas.setPointerCapture(e.pointerId);
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (currentTool === 'eraser') {
+        strokes = strokes.filter(s => !s.points.some(p => Math.hypot(p.x - x, p.y - y) < 20));
+        redraw();
+        return;
+      }
+      isDrawing = true;
+      currentPoints = [{ x, y }];
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (isInteractMode) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (currentTool === 'eraser' && e.buttons > 0) {
+        strokes = strokes.filter(s => !s.points.some(p => Math.hypot(p.x - x, p.y - y) < 20));
+        redraw();
+        return;
+      }
+
+      if (isDrawing) {
+        currentPoints.push({ x, y });
+        redraw();
+      }
+    });
+
+    canvas.addEventListener('pointerup', () => {
+      if (!isDrawing) return;
+      isDrawing = false;
+      if (currentPoints.length > 0) {
+        strokes.push({
+          tool: currentTool,
+          color: currentColor,
+          width: currentWidth,
+          opacity: currentTool === 'highlight' ? 0.35 : 1,
+          points: currentPoints
+        });
+      }
+      currentPoints = [];
+      redraw();
+    });
+
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setInteractMode(false);
+        document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTool = btn.dataset.tool;
+        if (currentTool === 'eraser') canvas.classList.add('eraser');
+        else canvas.classList.remove('eraser');
+      });
+    });
+
+    document.querySelectorAll('.color-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+        currentColor = dot.dataset.color;
+      });
+    });
+
+    document.getElementById('undoBtn').addEventListener('click', () => { strokes.pop(); redraw(); });
+    document.getElementById('clearBtn').addEventListener('click', () => { strokes = []; redraw(); });
+
+    // Video Recording Engine (Native Bridge Aware: React Native / Mobile Tablet vs Web Browser)
+    let mediaRecorder;
+    let recordedChunks = [];
+    let isRecording = false;
+    let isPaused = false;
+    let timerInterval;
+    let seconds = 0;
+
+    const recBtn = document.getElementById('recBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+
+    recBtn.addEventListener('click', async () => {
+      if (isRecording) {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'STOP_RECORDING' }));
+        } else if (mediaRecorder) {
+          mediaRecorder.stop();
+        }
+        isRecording = false;
+        isPaused = false;
+        recBtn.classList.remove('recording');
+        recBtn.textContent = '⏺️ Record Video';
+        pauseBtn.classList.remove('active', 'paused');
+        pauseBtn.textContent = '⏸️ Pause';
+        clearInterval(timerInterval);
+        return;
+      }
+
+      // Check if running inside React Native / Mobile Tablet App
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'START_RECORDING' }));
+        isRecording = true;
+        seconds = 0;
+        recBtn.classList.add('recording');
+        pauseBtn.classList.add('active');
+        timerInterval = setInterval(() => {
+          if (!isPaused) {
+            seconds++;
+            const m = String(Math.floor(seconds/60)).padStart(2, '0');
+            const s = String(seconds%60).padStart(2, '0');
+            recBtn.textContent = `⏹️ Stop ${m}:${s}`;
+          }
+        }, 1000);
+        return;
+      }
+
+      // Standard Web Browser Fallback (DisplayMedia)
+      try {
+        let videoTrack;
+        let audioTrack;
+
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioTrack = audioStream.getAudioTracks()[0];
+        } catch (e) {
+          console.warn("Microphone access not granted.");
+        }
+
+        try {
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { frameRate: 60 },
+            audio: false
+          });
+          videoTrack = displayStream.getVideoTracks()[0];
+        } catch (e) {
+          alert("Screen capture permission was canceled.");
+          return;
+        }
+
+        const tracks = [videoTrack];
+        if (audioTrack) tracks.push(audioTrack);
+
+        const combinedStream = new MediaStream(tracks);
+        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+        recordedChunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            recordedChunks.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          document.getElementById('previewVideo').src = url;
+          document.getElementById('downloadLink').href = url;
+          document.getElementById('videoModal').style.display = 'flex';
+          tracks.forEach(t => t.stop());
+        };
+
+        mediaRecorder.start(1000);
+        isRecording = true;
+        isPaused = false;
+        seconds = 0;
+        recBtn.classList.add('recording');
+        pauseBtn.classList.add('active');
+        pauseBtn.classList.remove('paused');
+        pauseBtn.textContent = '⏸️ Pause';
+
+        timerInterval = setInterval(() => {
+          if (!isPaused) {
+            seconds++;
+            const m = String(Math.floor(seconds/60)).padStart(2, '0');
+            const s = String(seconds%60).padStart(2, '0');
+            recBtn.textContent = `⏹️ Stop ${m}:${s}`;
+          }
+        }, 1000);
+      } catch (err) {
+        alert("Unable to start video recording: " + err.message);
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (!isRecording) return;
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: isPaused ? 'RESUME_RECORDING' : 'PAUSE_RECORDING' }));
+        isPaused = !isPaused;
+        pauseBtn.textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
+        if (isPaused) pauseBtn.classList.add('paused');
+        else pauseBtn.classList.remove('paused');
+        return;
+      }
+
+      if (!isPaused) {
+        mediaRecorder.pause();
+        isPaused = true;
+        pauseBtn.classList.add('paused');
+        pauseBtn.textContent = '▶️ Resume';
+      } else {
+        mediaRecorder.resume();
+        isPaused = false;
+        pauseBtn.classList.remove('paused');
+        pauseBtn.textContent = '⏸️ Pause';
+      }
+    });
+
+    document.getElementById('closeModalBtn').addEventListener('click', () => {
+      document.getElementById('videoModal').style.display = 'none';
+    });
+
+    setInteractMode(true);
+  </script>
+</body>
+</html>

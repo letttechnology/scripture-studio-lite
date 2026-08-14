@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "targetOS",
+      "type": "pickString",
+      "description": "Select Target OS for Scripture Studio LITE Build:",
+      "options": [
+        {
+          "label": "Windows (.exe / Portable)",
+          "value": "build:windows"
+        },
+        {
+          "label": "macOS (.dmg / .app)",
+          "value": "build:mac"
+        },
+        {
+          "label": "Linux (.AppImage / .deb)",
+          "value": "build:linux"
+        },
+        {
+          "label": "All Platforms (Windows, macOS, Linux)",
+          "value": "build:all"
+        }
+      ],
+      "default": "build:windows"
+    }
+  ],
+  "tasks": [
+    {
+      "label": "Build Scripture Studio LITE",
+      "type": "shell",
+      "command": "npm run ",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
