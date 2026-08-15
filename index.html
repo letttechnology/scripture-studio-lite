@@ -336,7 +336,7 @@
 
     <!-- Viewport Area -->
     <div class="viewport-area">
-      <iframe id="siteFrame" class="site-frame" src="http://localhost/read/romans/1"></iframe>
+      <webview id="siteFrame" class="site-frame" src="http://localhost/read/romans/1" partition="persist:scripturestudio" allowpopups style="width: 100%; height: 100%; border: none;"></webview>
       <canvas id="drawCanvas" class="drawing-canvas"></canvas>
     </div>
 
@@ -414,7 +414,11 @@
 
     function loadWebsiteUrl(url) {
       if (!url.startsWith("http://") && !url.startsWith("https://")) {
-        url = "https://" + url;
+        if (url.includes("localhost") || url.includes("127.0.0.1")) {
+          url = "http://" + url;
+        } else {
+          url = "https://" + url;
+        }
       }
       siteFrame.src = url;
     }
