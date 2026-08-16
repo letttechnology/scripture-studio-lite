@@ -53,8 +53,11 @@ export const App: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  const [autoSave, setAutoSave] = useState(false);
+  const [hasDownloaded, setHasDownloaded] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<any>(null);
@@ -84,10 +87,10 @@ export const App: React.FC = () => {
       // Access Microphone Audio
       const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Capture Canvas Stream (60fps)
+      // Capture Canvas Stream (30fps for smooth flicker-free capture)
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const canvasStream = canvas.captureStream(60);
+      const canvasStream = canvas.captureStream(30);
 
       // Combine Canvas Video Track + Audio Track
       const combinedStream = new MediaStream([
@@ -112,6 +115,27 @@ export const App: React.FC = () => {
         const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         setRecordedVideoUrl(url);
+        setHasDownloaded(false);
+
+        const now = new Date();
+        const YYYY = now.getFullYear();
+        const MM = String(now.getMonth() + 1).padStart(2, '0');
+        const DD = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        const timestampFilename = `scripture-studio-recording-${YYYY}${MM}${DD}-${hh}${mm}${ss}.webm`;
+
+        // Auto-Save recording if setting is enabled
+        if (autoSave) {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = timestampFilename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setHasDownloaded(true);
+        }
 
         // Stop audio tracks
         audioStream.getTracks().forEach((track) => track.stop());
@@ -140,6 +164,25 @@ export const App: React.FC = () => {
     } else {
       startRecording();
     }
+  };
+
+  const handleCloseModal = () => {
+    if (!hasDownloaded && !autoSave) {
+      const confirmDiscard = window.confirm(
+        'You have an unsaved video recording. Are you sure you want to close and discard it?'
+      );
+      if (!confirmDiscard) return;
+    }
+
+    if (previewVideoRef.current) {
+      previewVideoRef.current.pause();
+      previewVideoRef.current.currentTime = 0;
+    }
+    if (recordedVideoUrl) {
+      URL.revokeObjectURL(recordedVideoUrl);
+    }
+    setRecordedVideoUrl(null);
+    setHasDownloaded(false);
   };
 
   const currentPassageData = isCustomMode
@@ -206,6 +249,17 @@ export const App: React.FC = () => {
               style={{ width: '80px', accentColor: '#ff6b35' }}
             />
           </div>
+
+          {/* Auto-Save Toggle */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#aaa', fontSize: '0.85rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={autoSave}
+              onChange={(e) => setAutoSave(e.target.checked)}
+              style={{ accentColor: '#ff6b35' }}
+            />
+            <span>Auto-Save</span>
+          </label>
         </div>
       </div>
 
@@ -263,10 +317,10 @@ export const App: React.FC = () => {
             <h2 style={{ color: '#ff6b35', marginBottom: '16px', fontFamily: "'Outfit', sans-serif" }}>
               Recording Complete!
             </h2>
-            <video src={recordedVideoUrl} controls autoPlay style={{ width: '100%', borderRadius: '8px', marginBottom: '20px' }} />
+            <video ref={previewVideoRef} src={recordedVideoUrl} controls autoPlay style={{ width: '100%', borderRadius: '8px', marginBottom: '20px' }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button
-                onClick={() => setRecordedVideoUrl(null)}
+                onClick={handleCloseModal}
                 style={{
                   background: 'transparent',
                   color: '#aaa',
@@ -280,7 +334,17 @@ export const App: React.FC = () => {
               </button>
               <a
                 href={recordedVideoUrl}
-                download="scripture-studio-recording.webm"
+                download={(() => {
+                  const now = new Date();
+                  const YYYY = now.getFullYear();
+                  const MM = String(now.getMonth() + 1).padStart(2, '0');
+                  const DD = String(now.getDate()).padStart(2, '0');
+                  const hh = String(now.getHours()).padStart(2, '0');
+                  const mm = String(now.getMinutes()).padStart(2, '0');
+                  const ss = String(now.getSeconds()).padStart(2, '0');
+                  return `scripture-studio-recording-${YYYY}${MM}${DD}-${hh}${mm}${ss}.webm`;
+                })()}
+                onClick={() => setHasDownloaded(true)}
                 style={{
                   background: '#ff6b35',
                   color: '#fff',

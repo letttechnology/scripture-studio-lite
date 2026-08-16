@@ -662,9 +662,10 @@
           console.warn("Microphone access not granted.");
         }
 
+        let hasSavedRecording = false;
         try {
           const displayStream = await navigator.mediaDevices.getDisplayMedia({
-            video: { frameRate: 60 },
+            video: { frameRate: { ideal: 30, max: 30 } },
             audio: false
           });
           videoTrack = displayStream.getVideoTracks()[0];
@@ -689,8 +690,21 @@
         mediaRecorder.onstop = () => {
           const blob = new Blob(recordedChunks, { type: 'video/webm' });
           const url = URL.createObjectURL(blob);
-          document.getElementById('previewVideo').src = url;
-          document.getElementById('downloadLink').href = url;
+          hasSavedRecording = false;
+          const now = new Date();
+          const YYYY = now.getFullYear();
+          const MM = String(now.getMonth() + 1).padStart(2, '0');
+          const DD = String(now.getDate()).padStart(2, '0');
+          const hh = String(now.getHours()).padStart(2, '0');
+          const mm = String(now.getMinutes()).padStart(2, '0');
+          const ss = String(now.getSeconds()).padStart(2, '0');
+          const filename = `scripture-studio-recording-${YYYY}${MM}${DD}-${hh}${mm}${ss}.webm`;
+          const previewVid = document.getElementById('previewVideo');
+          previewVid.src = url;
+          const downloadLink = document.getElementById('downloadLink');
+          downloadLink.href = url;
+          downloadLink.download = filename;
+          downloadLink.onclick = () => { hasSavedRecording = true; };
           document.getElementById('videoModal').style.display = 'flex';
           tracks.forEach(t => t.stop());
         };
@@ -742,6 +756,20 @@
     });
 
     document.getElementById('closeModalBtn').addEventListener('click', () => {
+      if (typeof hasSavedRecording !== 'undefined' && !hasSavedRecording) {
+        const confirmDiscard = confirm("You have an unsaved video recording. Are you sure you want to close and discard it?");
+        if (!confirmDiscard) return;
+      }
+      const previewVid = document.getElementById('previewVideo');
+      if (previewVid) {
+        previewVid.pause();
+        previewVid.currentTime = 0;
+        if (previewVid.src && previewVid.src.startsWith('blob:')) {
+          URL.revokeObjectURL(previewVid.src);
+        }
+        previewVid.removeAttribute('src');
+        previewVid.load();
+      }
       document.getElementById('videoModal').style.display = 'none';
     });
 

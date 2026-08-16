@@ -10,17 +10,26 @@ function setupMediaPermissions() {
 
       try {
         const activeWin = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
-        if (activeWin && screen) {
-          const currentDisplay = screen.getDisplayMatching(activeWin.getBounds());
-          const matchingSource = sources.find(
-            (s) => s.display_id === currentDisplay.id.toString() || s.id.includes(currentDisplay.id.toString())
+        if (activeWin) {
+          const winMediaSourceId = typeof activeWin.getMediaSourceId === 'function' ? activeWin.getMediaSourceId() : null;
+          const matchingWindow = sources.find(
+            (s) => (winMediaSourceId && s.id === winMediaSourceId) ||
+                   (s.id.startsWith('window:') && s.name && s.name.includes('Scripture Studio'))
           );
-          if (matchingSource) {
-            targetSource = matchingSource;
+          if (matchingWindow) {
+            targetSource = matchingWindow;
+          } else if (screen) {
+            const currentDisplay = screen.getDisplayMatching(activeWin.getBounds());
+            const matchingDisplay = sources.find(
+              (s) => s.display_id === currentDisplay.id.toString() || s.id.includes(currentDisplay.id.toString())
+            );
+            if (matchingDisplay) {
+              targetSource = matchingDisplay;
+            }
           }
         }
       } catch (e) {
-        console.warn('Active monitor detection error:', e);
+        console.warn('Active window/monitor detection error:', e);
       }
 
       if (targetSource) {

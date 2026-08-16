@@ -31,7 +31,7 @@ const COLOR_PALETTE = [
   '#ffd166', // Accent Yellow
   '#4cc9f0', // Electric Blue
   '#06d6a0', // Lime Green
-  #ffffff'  // Pure White
+  '#ffffff'  // Pure White
 ];
 
 export const Toolbar: React.FC<ToolbarProps> = ({
