@@ -1,4 +1,0 @@
-{
-  "summary": "Scratch script to strip line numbers from step_175_app.kt and generate clean Kotlin source code in shared/src/commonMain/kotlin/App.kt.",
-  "updatedAt": "2026-07-04T00:05:32.513617Z"
-}

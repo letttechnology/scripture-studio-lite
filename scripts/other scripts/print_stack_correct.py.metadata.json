@@ -1,4 +1,0 @@
-{
-  "summary": "Corrected scratch stack printer to handle escaped backslashes in Kotlin string literals.",
-  "updatedAt": "2026-07-02T21:53:34.802059900Z"
-}
