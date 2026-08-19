@@ -3,6 +3,17 @@ release/
 scratch/
 node_modules/
 node_modules
+/scripts/
+scripts/
+/tests/screehots/
+/tests/screenshots/
+tests/screenshots/
+/tests/videos/
+/tests/video/
+tests/video/
+tests/videos/
+/test/results/
+test-results/
 
 *.sql
 *.webm
