@@ -18,8 +18,60 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   onStrokesChange,
   canvasRef
 }) => {
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
+  const isDrawingRef = useRef(false);
+  const currentPointsRef = useRef<Point[]>([]);
+  const rafRef = useRef<number | null>(null);
+  const offscreenRef = useRef<HTMLCanvasElement | null>(null);
+
+  const redrawCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (!offscreenRef.current) {
+      offscreenRef.current = document.createElement('canvas');
+    }
+    const offscreen = offscreenRef.current;
+    if (offscreen.width !== canvas.width || offscreen.height !== canvas.height) {
+      offscreen.width = canvas.width;
+      offscreen.height = canvas.height;
+    }
+
+    const offCtx = offscreen.getContext('2d');
+    if (!offCtx) return;
+
+    offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+
+    strokes.forEach((stroke) => {
+      renderStroke(offCtx, stroke);
+    });
+
+    const activePoints = currentPointsRef.current;
+    if (activePoints.length > 0) {
+      renderStroke(offCtx, {
+        id: 'active',
+        tool: currentTool,
+        color: currentColor,
+        width: currentWidth,
+        opacity: currentTool === 'highlight' ? 0.35 : 1,
+        points: activePoints
+      });
+    }
+
+    // Atomic double-buffer copy to main canvas without clearRect flash
+    ctx.globalCompositeOperation = 'copy';
+    ctx.drawImage(offscreen, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+  };
+
+  const scheduleRedraw = () => {
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      redrawCanvas();
+    });
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -28,40 +80,18 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const resizeCanvas = () => {
       const parent = canvas.parentElement;
       if (parent) {
-        canvas.width = parent.clientWidth;
-        canvas.height = parent.clientHeight;
-        redrawCanvas();
+        if (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
+          canvas.width = parent.clientWidth;
+          canvas.height = parent.clientHeight;
+          redrawCanvas();
+        }
       }
     };
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
     return () => window.removeEventListener('resize', resizeCanvas);
-  }, [strokes]);
-
-  const redrawCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    strokes.forEach((stroke) => {
-      renderStroke(ctx, stroke);
-    });
-
-    if (currentPoints.length > 0) {
-      renderStroke(ctx, {
-        id: 'active',
-        tool: currentTool,
-        color: currentColor,
-        width: currentWidth,
-        opacity: currentTool === 'highlight' ? 0.35 : 1,
-        points: currentPoints
-      });
-    }
-  };
+  }, []);
 
   const renderStroke = (ctx: CanvasRenderingContext2D, stroke: DrawStroke) => {
     if (stroke.points.length === 0) return;
@@ -155,12 +185,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       return;
     }
 
-    setIsDrawing(true);
-    setCurrentPoints([{ x, y, pressure }]);
+    isDrawingRef.current = true;
+    currentPointsRef.current = [{ x, y, pressure }];
+    scheduleRedraw();
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing && currentTool !== 'eraser') return;
+    if (!isDrawingRef.current && currentTool !== 'eraser') return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -177,33 +208,42 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       return;
     }
 
-    if (isDrawing) {
-      setCurrentPoints((prev) => [...prev, { x, y, pressure }]);
-      redrawCanvas();
+    if (isDrawingRef.current) {
+      currentPointsRef.current.push({ x, y, pressure });
+      scheduleRedraw();
     }
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    setIsDrawing(false);
+  const handlePointerUp = () => {
+    if (!isDrawingRef.current) return;
+    isDrawingRef.current = false;
 
-    if (currentPoints.length > 0) {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    const points = currentPointsRef.current;
+    if (points.length > 0) {
       const newStroke: DrawStroke = {
         id: Date.now().toString(),
         tool: currentTool,
         color: currentColor,
         width: currentWidth,
         opacity: currentTool === 'highlight' ? 0.35 : 1,
-        points: currentPoints
+        points: [...points]
       };
+      currentPointsRef.current = [];
       onStrokesChange([...strokes, newStroke]);
+    } else {
+      currentPointsRef.current = [];
+      redrawCanvas();
     }
-    setCurrentPoints([]);
   };
 
   useEffect(() => {
     redrawCanvas();
-  }, [currentPoints, strokes]);
+  }, [strokes]);
 
   return (
     <canvas

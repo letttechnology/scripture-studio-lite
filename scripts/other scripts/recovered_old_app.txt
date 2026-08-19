@@ -1,0 +1,805 @@
+Created At: 2026-06-24T19:43:06Z
+Completed At: 2026-06-24T19:43:06Z
+File Path: `file:///d:/workspace-vscode-antigravity/shared/src/commonMain/kotlin/App.kt`
+Total Lines: 1955
+Total Bytes: 111177
+Showing lines 1 to 800
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import androidx.compose.animation.AnimatedVisibility
+2: import androidx.compose.foundation.Canvas
+3: import androidx.compose.foundation.background
+4: import androidx.compose.foundation.border
+5: import androidx.compose.foundation.clickable
+6: import androidx.compose.foundation.layout.*
+7: import androidx.compose.foundation.rememberScrollState
+8: import androidx.compose.foundation.shape.CircleShape
+9: import androidx.compose.foundation.shape.RoundedCornerShape
+10: import androidx.compose.foundation.text.BasicTextField
+11: import androidx.compose.foundation.text.KeyboardOptions
+12: import androidx.compose.foundation.verticalScroll
+13: import androidx.compose.material.*
+14: import androidx.compose.material.icons.Icons
+15: import androidx.compose.material.icons.filled.Edit
+16: import androidx.compose.material.icons.filled.Settings
+17: import androidx.compose.runtime.*
+18: import androidx.compose.ui.Alignment
+19: import androidx.compose.ui.Modifier
+20: import androidx.compose.ui.draw.clip
+21: import androidx.compose.ui.geometry.Offset
+22: import androidx.compose.ui.graphics.Brush
+23: import androidx.compose.ui.graphics.Color
+24: import androidx.compose.ui.graphics.SolidColor
+25: import androidx.compose.ui.text.TextStyle
+26: import androidx.compose.ui.text.font.FontFamily
+27: import androidx.compose.ui.text.font.FontWeight
+28: import androidx.compose.ui.text.input.KeyboardType
+29: import androidx.compose.ui.text.input.PasswordVisualTransformation
+30: import androidx.compose.ui.text.style.TextAlign
+31: import androidx.compose.ui.unit.dp
+32: import androidx.compose.ui.unit.sp
+33: import com.myapplication.common.audio.AudioRecorder
+34: import com.myapplication.common.storage.CloudStorageService
+35: import com.myapplication.common.storage.exportFileNatively
+36: import com.myapplication.common.transcribe.WhisperService
+37: import com.myapplication.common.transcribe.WhisperSetupManager
+38: import com.myapplication.common.util.SettingsStorage
+39: import com.myapplication.common.util.selectDirectoryDialog
+40: import com.myapplication.common.util.selectFileDialog
+41: import com.myapplication.common.util.saveFileDialog
+42: import kotlinx.coroutines.delay
+43: import kotlinx.coroutines.flow.collectLatest
+44: import kotlinx.coroutines.launch
+45: 
+46: // High-fidelity Cyber Dark Palette
+47: val BgDark = Color(0xFF0F172A)      // Slate 900
+48: val CardDark = Color(0xFF1E293B)    // Slate 800
+49: val BorderColor = Color(0xFF334155) // Slate 700
+50: val TextLight = Color(0xFFF8FAFC)   // Slate 50
+51: val TextMuted = Color(0xFF94A3B8)   // Slate 400
+52: 
+53: val AccentGrad = Brush.horizontalGradient(
+54:     colors = listOf(Color(0xFF8B5CF6), Color(0xFF06B6D4)) // Neon Violet to Cyan
+55: )
+56: val ActiveRed = Color(0xFFEF4444)   // Pulse Red
+57: 
+58: @Composable
+59: fun App(
+60:     audioRecorder: AudioRecorder,
+61:     cloudWhisperService: WhisperService,
+62:     localWhisperService: WhisperService? = null,
+63:     cloudStorageService: CloudStorageService? = null,
+64:     whisperSetupManager: WhisperSetupManager? = null
+65: ) {
+66:     val coroutineScope = rememberCoroutineScope()
+67:     
+68:     // UI state
+69:     var isRecording by remember { mutableStateOf(false) }
+70:     var recordingDurationSec by remember { mutableStateOf(0) }
+71:     var currentAmplitude by remember { mutableStateOf(0f) }
+72:     val amplitudeHistory = remember { mutableStateListOf<Float>() }
+73:     
+74:     var recordingDirectory by remember { mutableStateOf("") }
+75:     var activeAudioPath by remember { mutableStateOf("") }
+76:     var autosaveEnabled by remember { mutableStateOf(true) }
+77:     var transcriptionText by remember { mutableStateOf("") }
+78:     var showApiKeyWarning by remember { mutableStateOf(false) }
+79:     var isTranscribing by remember { mutableStateOf(false) }
+80:     var transcriptionStatus by remember { mutableStateOf("") }
+81:     
+82:     // Persistent settings
+83:     var selectedEngine by remember { mutableStateOf(SettingsStorage.get("selected_engine", "local")) }
+84:     var apiKey by remember { mutableStateOf(SettingsStorage.get("api_key", "")) }
+85:     var localExecPath by remember { mutableStateOf(SettingsStorage.get("local_exec_path", "")) }
+86:     var localModelPath by remember { mutableStateOf(SettingsStorage.get("local_model_path", "")) }
+87:     
+88:     // Local setup state
+89:     var isSettingUp by remember { mutableStateOf(false) }
+90:     val setupProgress by if (whisperSetupManager != null) {
+91:         whisperSetupManager.setupProgress.collectAsState()
+92:     } else {
+93:         remember { mutableStateOf(0f) }
+94:     }
+95:     val setupStatus by if (whisperSetupManager != null) {
+96:         whisperSetupManager.setupStatus.collectAsState()
+97:     } else {
+98:         remember { mutableStateOf("") }
+99:     }
+100:     var selectedModelSize by remember { mutableStateOf("tiny") }
+101:     
+102:     // Cloud storage settings
+103:     var googleToken by remember { mutableStateOf(SettingsStorage.get("google_token", "")) }
+104:     var oneDriveToken by remember { mutableStateOf(SettingsStorage.get("onedrive_token", "")) }
+105:     var appleToken by remember { mutableStateOf(SettingsStorage.get("apple_token", "")) }
+106:     
+107:     // Developer OAuth Credentials
+108:     var googleClientId by remember { mutableStateOf(SettingsStorage.get("google_client_id", "")) }
+109:     var googleClientSecret by remember { mutableStateOf(SettingsStorage.get("google_client_secret", "")) }
+110:     var microsoftClientId by remember { mutableStateOf(SettingsStorage.get("microsoft_client_id", "")) }
+111:     
+112:     // Pro Subscription and limits
+113:     var isPro by remember { mutableStateOf(SettingsStorage.get("is_pro", "false") == "true") }
+114:     var transcribeCount by remember { mutableStateOf(SettingsStorage.get("transcribe_count", "0").toIntOrNull() ?: 0) }
+115:     
+116:     // Overlay & Dialog controls
+117:     var showPaywall by remember { mutableStateOf(false) }
+118:     var showLoginDialog by remember { mutableStateOf<String?>(null) } // "google", "onedrive", "apple"
+119:     var showCheckoutDialog by remember { mutableStateOf(false) }
+120:     var isPaused by remember { mutableStateOf(false) }
+121:     
+122:     // UI navigation
+123:     var showSettings by remember { mutableStateOf(false) }
+124:     var statusMessage by remember { mutableStateOf("") }
+125:     var statusIsError by remember { mutableStateOf(false) }
+126: 
+127:     // Waveform rendering limits
+128:     val maxWavebars = 50
+129: 
+130:     // Synchronize recording state
+131:     LaunchedEffect(isRecording) {
+132:         if (isRecording) {
+133:             amplitudeHistory.clear()
+134:             // Reset duration
+135:             recordingDurationSec = 0
+136:             
+137:             // Launch timer
+138:             launch {
+139:                 while (isRecording) {
+140:                     delay(1000)
+141:                     if (!isPaused) {
+142:                         recordingDurationSec++
+143:                     }
+144:                 }
+145:             }
+146:             
+147:             // Collect real-time amplitude
+148:             launch {
+149:                 audioRecorder.amplitudeFlow.collectLatest { amp ->
+150:                     currentAmplitude = amp
+151:                     amplitudeHistory.add(amp)
+152:                     if (amplitudeHistory.size > maxWavebars) {
+153:                         amplitudeHistory.removeAt(0)
+154:                     }
+155:                 }
+156:             }
+157:         } else {
+158:             currentAmplitude = 0f
+159:         }
+160:     }
+161: 
+162:     LaunchedEffect(Unit) {
+163:         recordingDirectory = SettingsStorage.get("recording_directory", "")
+164:         if (recordingDirectory.isEmpty()) {
+165:             val home = getPlatformDefaultDirectory()
+166:             recordingDirectory = "$home/AuraTranscribe"
+167:             SettingsStorage.put("recording_directory", recordingDirectory)
+168:         }
+169:         
+170:         val autosaveStr = SettingsStorage.get("autosave_enabled", "true")
+171:         autosaveEnabled = autosaveStr == "true"
+172:         
+173:         activeAudioPath = SettingsStorage.get("active_audio_path", "")
+174:     }
+175: 
+176:     MaterialTheme {
+177:         Box(
+178:             modifier = Modifier
+179:                 .fillMaxSize()
+180:                 .background(BgDark)
+181:                 .padding(16.dp)
+182:         ) {
+183:             Column(
+184:                 modifier = Modifier
+185:                     .fillMaxSize()
+186:                     .verticalScroll(rememberScrollState()),
+187:                 horizontalAlignment = Alignment.CenterHorizontally
+188:             ) {
+189:                 // Header Pane
+190:                 Row(
+191:                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+192:                     horizontalArrangement = Arrangement.SpaceBetween,
+193:                     verticalAlignment = Alignment.CenterVertically
+194:                 ) {
+195:                     Column {
+196:                         Text(
+197:                             text = "AURA TRANSCRIBE",
+198:                             fontSize = 22.sp,
+199:                             fontWeight = FontWeight.Bold,
+200:                             color = TextLight,
+201:                             fontFamily = FontFamily.Monospace,
+202:                             letterSpacing = 2.sp
+203:                         )
+204:                         Text(
+205:                             text = "Offline local and high-fidelity cloud transcription",
+206:                             fontSize = 12.sp,
+207:                             color = TextMuted
+208:                         )
+209:                     }
+210:                     
+211:                     IconButton(
+212:                         onClick = { showSettings = !showSettings },
+213:                         modifier = Modifier
+214:                             .clip(CircleShape)
+215:                             .background(CardDark)
+216:                             .border(1.dp, BorderColor, CircleShape)
+217:                     ) {
+218:                         Icon(
+219:                             imageVector = Icons.Default.Settings,
+220:                             contentDescription = "Open Settings",
+221:                             tint = TextLight
+222:                         )
+223:                     }
+224:                 }
+225: 
+226:                 // Status Banner
+227:                 if (statusMessage.isNotEmpty()) {
+228:                     Box(
+229:                         modifier = Modifier
+230:                             .fillMaxWidth()
+231:                             .padding(bottom = 16.dp)
+232:                             .clip(RoundedCornerShape(8.dp))
+233:                             .background(if (statusIsError) Color(0x33EF4444) else Color(0x3310B981))
+234:                             .border(1.dp, if (statusIsError) Color(0xFFEF4444) else Color(0xFF10B981), RoundedCornerShape(8.dp))
+235:                             .padding(12.dp)
+236:                     ) {
+237:                         val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+238:                         Row(
+239:                             modifier = Modifier.fillMaxWidth(),
+240:                             horizontalArrangement = Arrangement.SpaceBetween,
+241:                             verticalAlignment = Alignment.CenterVertically
+242:                         ) {
+243:                             androidx.compose.foundation.text.selection.SelectionContainer(
+244:                                 modifier = Modifier.weight(1f).padding(end = 8.dp)
+245:                             ) {
+246:                                 Text(
+247:                                     text = statusMessage,
+248:                                     color = TextLight,
+249:                                     fontSize = 13.sp,
+250:                                     fontWeight = FontWeight.SemiBold
+251:                                 )
+252:                             }
+253:                             Text(
+254:                                 text = "COPY",
+255:                                 color = Color(0xFF06B6D4),
+256:                                 fontSize = 11.sp,
+257:                                 fontWeight = FontWeight.Bold,
+258:                                 modifier = Modifier
+259:                                     .clickable {
+260:                                         clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(statusMessage))
+261:                                     }
+262:                                     .padding(4.dp)
+263:                             )
+264:                         }
+265:                     }
+266:                 }
+267: 
+268:                 // Dual Pane or Vertical Stack depending on size
+269:                 Column(
+270:                     modifier = Modifier.fillMaxWidth(),
+271:                     horizontalAlignment = Alignment.CenterHorizontally
+272:                 ) {
+273:                     // Recorder Glass Card
+274:                     Card(
+275:                         modifier = Modifier
+276:                             .fillMaxWidth()
+277:                             .border(1.dp, BorderColor, RoundedCornerShape(16.dp)),
+278:                         shape = RoundedCornerShape(16.dp),
+279:                         backgroundColor = CardDark,
+280:                         elevation = 8.dp
+281:                     ) {
+282:                         Column(
+283:                             modifier = Modifier.padding(24.dp),
+284:                             horizontalAlignment = Alignment.CenterHorizontally
+285:                         ) {
+286:                             Text(
+287:                                 text = if (isRecording) "RECORDING ACTIVE" else "TAP TO RECORD",
+288:                                 fontSize = 12.sp,
+289:                                 fontWeight = FontWeight.Bold,
+290:                                 color = if (isRecording) ActiveRed else TextMuted,
+291:                                 letterSpacing = 1.5.sp
+292:                             )
+293:                             
+294:                             Spacer(modifier = Modifier.height(8.dp))
+295:                             
+296:                             // Timer display
+297:                             Text(
+298:                                 text = formatDuration(recordingDurationSec),
+299:                                 fontSize = 36.sp,
+300:                                 fontWeight = FontWeight.ExtraBold,
+301:                                 color = TextLight,
+302:                                 fontFamily = FontFamily.Monospace
+303:                             )
+304:                             
+305:                             Spacer(modifier = Modifier.height(24.dp))
+306: 
+307:                             // Canvas Visualizer
+308:                             Box(
+309:                                 modifier = Modifier
+310:                                     .fillMaxWidth()
+311:                                     .height(60.dp)
+312:                                     .clip(RoundedCornerShape(8.dp))
+313:                                     .background(BgDark)
+314:                                     .padding(horizontal = 8.dp)
+315:                             ) {
+316:                                 Canvas(modifier = Modifier.fillMaxSize()) {
+317:                                     val width = size.width
+318:                                     val height = size.height
+319:                                     val barWidth = 6.dp.toPx()
+320:                                     val spacing = 4.dp.toPx()
+321:                                     val totalBarWidth = barWidth + spacing
+322:                                     
+323:                                     val activeHistory = amplitudeHistory.toList()
+324:                                     val barsCount = activeHistory.size
+325:                                     
+326:                                     for (i in 0 until barsCount) {
+327:                                         val amp = activeHistory[i]
+328:                                         val barHeight = (amp * height).coerceIn(4f, height)
+329:                                         val x = width - (barsCount - i) * totalBarWidth
+330:                                         
+331:                                         if (x >= 0) {
+332:                                             drawRoundRect(
+333:                                                 color = if (isRecording) Color(0xFF06B6D4) else Color(0xFF8B5CF6),
+334:                                                 topLeft = Offset(x, (height - barHeight) / 2),
+335:                                                 size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
+336:                                                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx())
+337:                                             )
+338:                                         }
+339:                                     }
+340:                                 }
+341:                             }
+342: 
+343:                             Spacer(modifier = Modifier.height(16.dp))
+344: 
+345:                             if (activeAudioPath.isNotEmpty()) {
+346:                                 val nameOnly = activeAudioPath.substringAfterLast("/").substringAfterLast("\\")
+347:                                 Text(
+348:                                     text = if (isRecording) "Recording to: $nameOnly" else "Active File: $nameOnly",
+349:                                     fontSize = 12.sp,
+350:                                     color = if (isRecording) ActiveRed else Color(0xFF06B6D4),
+351:                                     fontWeight = FontWeight.SemiBold
+352:                                 )
+353:                             } else {
+354:                                 Text(
+355:                                     text = "No Audio File Loaded",
+356:                                     fontSize = 12.sp,
+357:                                     color = TextMuted,
+358:                                     fontWeight = FontWeight.Normal
+359:                                 )
+360:                             }
+361: 
+362:                             Spacer(modifier = Modifier.height(24.dp))
+363: 
+364:                             Row(
+365:                                 modifier = Modifier.fillMaxWidth(),
+366:                                 horizontalArrangement = Arrangement.Center,
+367:                                 verticalAlignment = Alignment.CenterVertically
+368:                             ) {
+369:                                 // Balance space (equal to LOAD AUDIO button width plus spacer)
+370:                                 if (!isRecording) {
+371:                                     Spacer(modifier = Modifier.width(130.dp))
+372:                                 }
+373: 
+374:                                 // Large Glowing Record Button
+375:                                 Box(
+376:                                     contentAlignment = Alignment.Center,
+377:                                     modifier = Modifier
+378:                                         .size(100.dp)
+379:                                         .clip(CircleShape)
+380:                                         .background(if (isRecording) ActiveRed.copy(alpha = 0.2f) else Color(0x228B5CF6))
+381:                                         .border(2.dp, if (isRecording) ActiveRed else Color(0xFF8B5CF6), CircleShape)
+382:                                         .clickable {
+383:                                             if (isRecording) {
+384:                                                 audioRecorder.stopRecording()
+385:                                                 isRecording = false
+386:                                                 isPaused = false
+387:                                                 if (autosaveEnabled) {
+388:                                                     statusMessage = "Audio saved to: $activeAudioPath"
+389:                                                 } else {
+390:                                                     val defaultName = activeAudioPath.substringAfterLast("/").substringAfterLast("\\")
+391:                                                     val chosenPath = saveFileDialog(recordingDirectory, defaultName)
+392:                                                     if (chosenPath != null) {
+393:                                                         val success = moveFile(activeAudioPath, chosenPath)
+394:                                                         if (success) {
+395:                                                             activeAudioPath = chosenPath
+396:                                                             statusMessage = "Audio saved to: $activeAudioPath"
+397:                                                         } else {
+398:                                                             statusMessage = "Error saving. Audio kept at: $activeAudioPath"
+399:                                                         }
+400:                                                     } else {
+401:                                                         statusMessage = "Saving cancelled. Audio kept at: $activeAudioPath"
+402:                                                     }
+403:                                                 }
+404:                                                 SettingsStorage.put("active_audio_path", activeAudioPath)
+405:                                                 statusIsError = false
+406:                                             } else {
+407:                                                 statusMessage = ""
+408:                                                 val defaultName = "recording_${getFormattedDateTimeString()}.wav"
+409:                                                 activeAudioPath = "$recordingDirectory/$defaultName"
+410:                                                 audioRecorder.startRecording(activeAudioPath)
+411:                                                 isRecording = true
+412:                                                 isPaused = false
+413:                                             }
+414:                                         }
+415:                                 ) {
+416:                                     // Nested pulse shape
+417:                                     Box(
+418:                                         modifier = Modifier
+419:                                             .size(if (isRecording) 40.dp else 60.dp)
+420:                                             .clip(if (isRecording) RoundedCornerShape(8.dp) else CircleShape)
+421:                                             .background(if (isRecording) ActiveRed else Color(0xFF8B5CF6))
+422:                                     )
+423:                                 }
+424: 
+425:                                 if (isRecording) {
+426:                                     Spacer(modifier = Modifier.width(24.dp))
+427: 
+428:                                     // PAUSE / RESUME Button
+429:                                     Box(
+430:                                         modifier = Modifier
+431:                                             .clip(RoundedCornerShape(8.dp))
+432:                                             .background(if (isPaused) Color(0x3310B981) else Color(0x33EF4444))
+433:                                             .border(1.dp, if (isPaused) Color(0xFF10B981) else Color(0xFFEF4444), RoundedCornerShape(8.dp))
+434:                                             .clickable {
+435:                                                 if (isPaused) {
+436:                                                     audioRecorder.resumeRecording()
+437:                                                     isPaused = false
+438:                                                 } else {
+439:                                                     audioRecorder.pauseRecording()
+440:                                                     isPaused = true
+441:                                                 }
+442:                                             }
+443:                                             .padding(horizontal = 16.dp, vertical = 10.dp)
+444:                                     ) {
+445:                                         Text(
+446:                                             text = if (isPaused) "RESUME" else "PAUSE",
+447:                                             color = if (isPaused) Color(0xFF10B981) else Color(0xFFEF4444),
+448:                                             fontSize = 11.sp,
+449:                                             fontWeight = FontWeight.Bold,
+450:                                             letterSpacing = 1.sp
+451:                                         )
+452:                                     }
+453:                                 }
+454: 
+455:                                 if (!isRecording) {
+456:                                     Spacer(modifier = Modifier.width(24.dp))
+457: 
+458:                                     // LOAD AUDIO Button
+459:                                     Box(
+460:                                         modifier = Modifier
+461:                                             .clip(RoundedCornerShape(8.dp))
+462:                                             .background(Color(0x2206B6D4))
+463:                                             .border(1.dp, Color(0xFF06B6D4), RoundedCornerShape(8.dp))
+464:                                             .clickable {
+465:                                                 val selectedFile = selectFileDialog("Select Audio File", recordingDirectory, listOf(".wav", ".mp3", ".m4a"))
+466:                                                 if (selectedFile != null) {
+467:                                                     activeAudioPath = selectedFile
+468:                                                     SettingsStorage.put("active_audio_path", activeAudioPath)
+469:                                                     amplitudeHistory.clear()
+470:                                                     recordingDurationSec = 0
+471:                                                     statusMessage = "Loaded audio: ${selectedFile.substringAfterLast("/").substringAfterLast("\\")}"
+472:                                                     statusIsError = false
+473:                                                 }
+474:                                             }
+475:                                             .padding(horizontal = 16.dp, vertical = 10.dp)
+476:                                     ) {
+477:                                         Text(
+478:                                             text = "LOAD AUDIO",
+479:                                             color = Color(0xFF06B6D4),
+480:                                             fontSize = 11.sp,
+481:                                             fontWeight = FontWeight.Bold,
+482:                                             letterSpacing = 1.sp
+483:                                         )
+484:                                     }
+485:                                 }
+486:                             }
+487:                         }
+488:                     }
+489: 
+490:                     Spacer(modifier = Modifier.height(16.dp))
+491: 
+492:                     // Transcription Config & Execution Card
+493:                     Card(
+494:                         modifier = Modifier
+495:                             .fillMaxWidth()
+496:                             .border(1.dp, BorderColor, RoundedCornerShape(16.dp)),
+497:                         shape = RoundedCornerShape(16.dp),
+498:                         backgroundColor = CardDark,
+499:                         elevation = 8.dp
+500:                     ) {
+501:                         Column(modifier = Modifier.padding(20.dp)) {
+502:                             Text(
+503:                                 text = "TRANSCRIPTION SETTINGS",
+504:                                 fontSize = 11.sp,
+505:                                 fontWeight = FontWeight.Bold,
+506:                                 color = TextMuted,
+507:                                 letterSpacing = 1.5.sp
+508:                             )
+509:                             
+510:                             Spacer(modifier = Modifier.height(12.dp))
+511: 
+512:                             // Engine Selector
+513:                             Row(
+514:                                 modifier = Modifier
+515:                                     .fillMaxWidth()
+516:                                     .clip(RoundedCornerShape(8.dp))
+517:                                     .background(BgDark)
+518:                                     .padding(4.dp),
+519:                                 horizontalArrangement = Arrangement.SpaceEvenly
+520:                             ) {
+521:                                 val isCloud = selectedEngine == "cloud"
+522:                                 
+523:                                 Box(
+524:                                     modifier = Modifier
+525:                                         .weight(1f)
+526:                                         .clip(RoundedCornerShape(6.dp))
+527:                                         .background(if (isCloud) Color(0xFF8B5CF6) else Color.Transparent)
+528:                                         .clickable {
+529:                                             selectedEngine = "cloud"
+530:                                             SettingsStorage.put("selected_engine", "cloud")
+531:                                             if (apiKey.trim().isEmpty()) {
+532:                                                 showApiKeyWarning = true
+533:                                             }
+534:                                         }
+535:                                         .padding(vertical = 8.dp),
+536:                                     contentAlignment = Alignment.Center
+537:                                 ) {
+538:                                     Text(
+539:                                         text = "Cloud API",
+540:                                         color = TextLight,
+541:                                         fontWeight = if (isCloud) FontWeight.Bold else FontWeight.Normal,
+542:                                         fontSize = 13.sp
+543:                                     )
+544:                                 }
+545: 
+546:                                 if (localWhisperService != null) {
+547:                                     Box(
+548:                                         modifier = Modifier
+549:                                             .weight(1f)
+550:                                             .clip(RoundedCornerShape(6.dp))
+551:                                             .background(if (!isCloud) Color(0xFF8B5CF6) else Color.Transparent)
+552:                                             .clickable {
+553:                                                 selectedEngine = "local"
+554:                                                 SettingsStorage.put("selected_engine", "local")
+555:                                             }
+556:                                             .padding(vertical = 8.dp),
+557:                                         contentAlignment = Alignment.Center
+558:                                     ) {
+559:                                         Text(
+560:                                             text = "Local (Offline)",
+561:                                             color = TextLight,
+562:                                             fontWeight = if (!isCloud) FontWeight.Bold else FontWeight.Normal,
+563:                                             fontSize = 13.sp
+564:                                         )
+565:                                     }
+566:                                 }
+567:                             }
+568: 
+569:                             val hasLocalConfig = localExecPath.trim().isNotEmpty() && localModelPath.trim().isNotEmpty()
+570: 
+571:                             if (selectedEngine == "local" && !hasLocalConfig && whisperSetupManager?.isSupported == true) {
+572:                                 Spacer(modifier = Modifier.height(16.dp))
+573:                                 Box(
+574:                                     modifier = Modifier
+575:                                         .fillMaxWidth()
+576:                                         .clip(RoundedCornerShape(8.dp))
+577:                                         .background(BgDark)
+578:                                         .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
+579:                                         .padding(16.dp)
+580:                                 ) {
+581:                                     Column {
+582:                                         Text(
+583:                                             text = "OFFLINE ENGINE SETUP REQUIRED",
+584:                                             fontSize = 11.sp,
+585:                                             fontWeight = FontWeight.Bold,
+586:                                             color = Color(0xFF06B6D4),
+587:                                             letterSpacing = 1.sp
+588:                                         )
+589:                                         Spacer(modifier = Modifier.height(6.dp))
+590:                                         Text(
+591:                                             text = "Local offline transcription requires downloading the Whisper execution engine (~10MB) and a model file. Choose a model size below to begin:",
+592:                                             fontSize = 12.sp,
+593:                                             color = TextMuted
+594:                                         )
+595:                                         
+596:                                         Spacer(modifier = Modifier.height(12.dp))
+597:                                         
+598:                                         Row(
+599:                                             modifier = Modifier.fillMaxWidth(),
+600:                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
+601:                                         ) {
+602:                                             listOf("tiny", "base", "small").forEach { size ->
+603:                                                 val isSelected = selectedModelSize == size
+604:                                                 Box(
+605:                                                     modifier = Modifier
+606:                                                         .weight(1f)
+607:                                                         .clip(RoundedCornerShape(6.dp))
+608:                                                         .background(if (isSelected) Color(0xFF8B5CF6) else CardDark)
+609:                                                         .border(1.dp, if (isSelected) Color(0xFF8B5CF6) else BorderColor, RoundedCornerShape(6.dp))
+610:                                                         .clickable(enabled = !isSettingUp) {
+611:                                                             selectedModelSize = size
+612:                                                         }
+613:                                                         .padding(vertical = 6.dp),
+614:                                                     contentAlignment = Alignment.Center
+615:                                                 ) {
+616:                                                     Text(
+617:                                                         text = size.uppercase(),
+618:                                                         color = TextLight,
+619:                                                         fontSize = 11.sp,
+620:                                                         fontWeight = FontWeight.Bold
+621:                                                     )
+622:                                                 }
+623:                                             }
+624:                                         }
+625: 
+626:                                         Spacer(modifier = Modifier.height(16.dp))
+627: 
+628:                                         if (isSettingUp) {
+629:                                             Text(
+630:                                                 text = setupStatus,
+631:                                                 fontSize = 12.sp,
+632:                                                 color = TextLight,
+633:                                                 fontWeight = FontWeight.SemiBold
+634:                                             )
+635:                                             Spacer(modifier = Modifier.height(8.dp))
+636:                                             LinearProgressIndicator(
+637:                                                 progress = setupProgress,
+638:                                                 color = Color(0xFF06B6D4),
+639:                                                 backgroundColor = BorderColor,
+640:                                                 modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp))
+641:                                             )
+642:                                             Spacer(modifier = Modifier.height(4.dp))
+643:                                             Text(
+644:                                                 text = "${(setupProgress * 100).toInt()}% completed",
+645:                                                 fontSize = 11.sp,
+646:                                                 color = TextMuted,
+647:                                                 textAlign = TextAlign.End,
+648:                                                 modifier = Modifier.fillMaxWidth()
+649:                                             )
+650:                                         } else {
+651:                                             Row(
+652:                                                 modifier = Modifier.fillMaxWidth(),
+653:                                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
+654:                                             ) {
+655:                                                 Button(
+656:                                                     onClick = {
+657:                                                         isSettingUp = true
+658:                                                         coroutineScope.launch {
+659:                                                             val success = whisperSetupManager.startAutoSetup(selectedModelSize)
+660:                                                             isSettingUp = false
+661:                                                             if (success) {
+662:                                                                 localExecPath = SettingsStorage.get("local_exec_path", "")
+663:                                                                 localModelPath = SettingsStorage.get("local_model_path", "")
+664:                                                                 statusMessage = "Local Whisper setup completed successfully!"
+665:                                                                 statusIsError = false
+666:                                                             } else {
+667:                                                                 statusMessage = "Setup failed. Check log details or try again."
+668:                                                                 statusIsError = true
+669:                                                             }
+670:                                                         }
+671:                                                     },
+672:                                                     modifier = Modifier.weight(1.5f).height(38.dp),
+673:                                                     shape = RoundedCornerShape(8.dp),
+674:                                                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF06B6D4))
+675:                                                 ) {
+676:                                                     Text("AUTO SETUP", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+677:                                                 }
+678:                                                 
+679:                                                 Button(
+680:                                                     onClick = {
+681:                                                         showSettings = true
+682:                                                     },
+683:                                                     modifier = Modifier.weight(1f).height(38.dp),
+684:                                                     shape = RoundedCornerShape(8.dp),
+685:                                                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF334155))
+686:                                                 ) {
+687:                                                     Text("MANUAL PATHS", color = TextLight, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+688:                                                 }
+689:                                             }
+690:                                         }
+691:                                     }
+692:                                 }
+693:                             } else {
+694:                                 Spacer(modifier = Modifier.height(16.dp))
+695: 
+696:                                 Button(
+697:                                     onClick = {
+698:                                         if (isTranscribing) return@Button
+699:                                         
+700:                                         if (!isPro && transcribeCount >= 3) {
+701:                                             showPaywall = true
+702:                                             return@Button
+703:                                         }
+704:                                         
+705:                                         val isCloud = selectedEngine == "cloud"
+706:                                         if (isCloud && apiKey.trim().isEmpty()) {
+707:                                             showApiKeyWarning = true
+708:                                             return@Button
+709:                                         }
+710:                                         
+711:                                         isTranscribing = true
+712:                                         transcriptionStatus = "Transcribing audio file..."
+713:                                         statusMessage = ""
+714:                                         
+715:                                         coroutineScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+716:                                             try {
+717:                                                 val text = if (isCloud) {
+718:                                                     cloudWhisperService.transcribe(activeAudioPath, apiKey)
+719:                                                 } else {
+720:                                                     if (localWhisperService == null) {
+721:                                                         throw Exception("Local Whisper is not available on this platform.")
+722:                                                     }
+723:                                                     localWhisperService.transcribe(activeAudioPath, "")
+724:                                                 }
+725:                                                 transcriptionText = text
+726:                                                 statusMessage = "Transcription completed."
+727:                                                 statusIsError = false
+728:                                                 amplitudeHistory.clear()
+729:                                                 recordingDurationSec = 0
+730:                                                 activeAudioPath = ""
+731:                                                 SettingsStorage.put("active_audio_path", "")
+732:                                                 
+733:                                                 // Increment transcription count
+734:                                                 transcribeCount++
+735:                                                 SettingsStorage.put("transcribe_count", transcribeCount.toString())
+736:                                             } catch (e: Exception) {
+737:                                                 e.printStackTrace()
+738:                                                 statusMessage = e.message ?: "An error occurred during transcription."
+739:                                                 statusIsError = true
+740:                                             } finally {
+741:                                                 isTranscribing = false
+742:                                             }
+743:                                         }
+744:                                     },
+745:                                     modifier = Modifier.fillMaxWidth().height(48.dp),
+746:                                     shape = RoundedCornerShape(8.dp),
+747:                                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF06B6D4)),
+748:                                     enabled = !isTranscribing && !isRecording
+749:                                 ) {
+750:                                     if (isTranscribing) {
+751:                                         CircularProgressIndicator(modifier = Modifier.size(20.dp), color = TextLight)
+752:                                         Spacer(modifier = Modifier.width(8.dp))
+753:                                         Text(text = transcriptionStatus, color = TextLight, fontSize = 14.sp)
+754:                                     } else {
+755:                                         Text(
+756:                                             text = if (selectedEngine == "cloud") "TRANSCRIBE VIA CLOUD API" else "TRANSCRIBE OFFLINE LOCALLY",
+757:                                             color = TextLight,
+758:                                             fontWeight = FontWeight.Bold,
+759:                                             letterSpacing = 1.sp,
+760:                                             fontSize = 13.sp
+761:                                         )
+762:                                     }
+763:                                 }
+764:                             }
+765:                         }
+766:                     }
+767: 
+768:                     Spacer(modifier = Modifier.height(16.dp))
+769: 
+770:                     // Transcript Text Pane Card
+771:                     Card(
+772:                         modifier = Modifier
+773:                             .fillMaxWidth()
+774:                             .border(1.dp, BorderColor, RoundedCornerShape(16.dp)),
+775:                         shape = RoundedCornerShape(16.dp),
+776:                         backgroundColor = CardDark,
+777:                         elevation = 8.dp
+778:                     ) {
+779:                         Column(modifier = Modifier.padding(20.dp)) {
+780:                             Row(
+781:                                 modifier = Modifier.fillMaxWidth(),
+782:                                 horizontalArrangement = Arrangement.SpaceBetween,
+783:                                 verticalAlignment = Alignment.CenterVertically
+784:                             ) {
+785:                                 Text(
+786:                                     text = "TRANSCRIPT",
+787:                                     fontSize = 11.sp,
+788:                                     fontWeight = FontWeight.Bold,
+789:                                     color = TextMuted,
+790:                                     letterSpacing = 1.5.sp
+791:                                 )
+792:                                 if (transcriptionText.isNotEmpty()) {
+793:                                     Icon(
+794:                                         imageVector = Icons.Default.Edit,
+795:                                      
+<truncated 489 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.

@@ -1,0 +1,144 @@
+Created At: 2026-06-24T22:16:45Z
+Completed At: 2026-06-24T22:16:45Z
+File Path: `file:///d:/workspace-vscode-antigravity/shared/src/commonMain/kotlin/App.kt`
+Total Lines: 2278
+Total Bytes: 132696
+Showing lines 1860 to 1995
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1860:                 }
+1861:             }
+1862: 
+1863:             // Mock Login / OAuth Authorization Dialog
+1864:             AnimatedVisibility(
+1865:                 visible = showLoginDialog != null,
+1866:                 modifier = Modifier.align(Alignment.Center)
+1867:             ) {
+1868:                 val provider = showLoginDialog ?: ""
+1869:                 var username by remember { mutableStateOf("") }
+1870:                 var password by remember { mutableStateOf("") }
+1871:                 var isConnecting by remember { mutableStateOf(false) }
+1872: 
+1873:                 // Prepopulate mock data
+1874:                 LaunchedEffect(provider) {
+1875:                     if (provider.isNotEmpty()) {
+1876:                         username = when (provider) {
+1877:                             "google" -> "alex.jones@gmail.com"
+1878:                             "onedrive" -> "alex.jones@outlook.com"
+1879:                             else -> "alex.jones@icloud.com"
+1880:                         }
+1881:                         password = "••••••••••••"
+1882:                     }
+1883:                 }
+1884: 
+1885:                 Card(
+1886:                     modifier = Modifier
+1887:                         .fillMaxWidth(0.9f)
+1888:                         .padding(16.dp)
+1889:                         .border(1.dp, BorderColor, RoundedCornerShape(16.dp)),
+1890:                     shape = RoundedCornerShape(16.dp),
+1891:                     backgroundColor = CardDark,
+1892:                     elevation = 24.dp
+1893:                 ) {
+1894:                     Column(
+1895:                         modifier = Modifier.padding(20.dp),
+1896:                         horizontalAlignment = Alignment.CenterHorizontally
+1897:                     ) {
+1898:                         val headerText = when (provider) {
+1899:                             "google" -> "Sign in with Google"
+1900:                             "onedrive" -> "Sign in with Microsoft"
+1901:                             else -> "Sign in with Apple ID"
+1902:                         }
+1903:                         val accentColor = when (provider) {
+1904:                             "google" -> Color(0xFF0F9D58)
+1905:                             "onedrive" -> Color(0xFF0078D4)
+1906:                             else -> Color(0xFF8B5CF6)
+1907:                         }
+1908: 
+1909:                         Text(
+1910:                             text = headerText,
+1911:                             fontSize = 16.sp,
+1912:                             fontWeight = FontWeight.Bold,
+1913:                             color = TextLight,
+1914:                             letterSpacing = 1.sp
+1915:                         )
+1916:                         Spacer(modifier = Modifier.height(12.dp))
+1917:                         Text(
+1918:                             text = "Aura Transcribe requests access to your files & folder storage to automatically sync audio recordings and transcripts.",
+1919:                             fontSize = 12.sp,
+1920:                             color = TextMuted,
+1921:                             textAlign = TextAlign.Center
+1922:                         )
+1923:                         Spacer(modifier = Modifier.height(16.dp))
+1924: 
+1925:                         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+1926:                             Text("Email / Username", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+1927:                             OutlinedTextField(
+1928:                                 value = username,
+1929:                                 onValueChange = { username = it },
+1930:                                 modifier = Modifier.fillMaxWidth(),
+1931:                                 textStyle = TextStyle(color = TextLight, fontSize = 13.sp),
+1932:                                 colors = TextFieldDefaults.outlinedTextFieldColors(
+1933:                                     focusedBorderColor = accentColor,
+1934:                                     unfocusedBorderColor = BorderColor
+1935:                                 ),
+1936:                                 enabled = !isConnecting
+1937:                             )
+1938: 
+1939:                             Text("Password", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+1940:                             OutlinedTextField(
+1941:                                 value = password,
+1942:                                 onValueChange = { password = it },
+1943:                                 modifier = Modifier.fillMaxWidth(),
+1944:                                 textStyle = TextStyle(color = TextLight, fontSize = 13.sp),
+1945:                                 visualTransformation = PasswordVisualTransformation(),
+1946:                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+1947:                                 colors = TextFieldDefaults.outlinedTextFieldColors(
+1948:                                     focusedBorderColor = accentColor,
+1949:                                     unfocusedBorderColor = BorderColor
+1950:                                 ),
+1951:                                 enabled = !isConnecting
+1952:                             )
+1953:                         }
+1954: 
+1955:                         Spacer(modifier = Modifier.height(24.dp))
+1956: 
+1957:                         if (isConnecting) {
+1958:                             CircularProgressIndicator(color = accentColor, modifier = Modifier.size(24.dp))
+1959:                             Spacer(modifier = Modifier.height(8.dp))
+1960:                             Text("Connecting account and generating token...", color = TextMuted, fontSize = 11.sp)
+1961:                         } else {
+1962:                             Row(
+1963:                                 modifier = Modifier.fillMaxWidth(),
+1964:                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
+1965:                             ) {
+1966:                                 Button(
+1967:                                     onClick = {
+1968:                                         isConnecting = true
+1969:                                         coroutineScope.launch {
+1970:                                             delay(1000) // Simulate OAuth callback delay
+1971:                                             isConnecting = false
+1972:                                             val mockToken = "mock_token_${provider}_" + getFormattedDateTimeString()
+1973:                                             when (provider) {
+1974:                                                 "google" -> {
+1975:                                                     googleToken = mockToken
+1976:                                                     SettingsStorage.put("google_token", mockToken)
+1977:                                                 }
+1978:                                                 "onedrive" -> {
+1979:                                                     oneDriveToken = mockToken
+1980:                                                     SettingsStorage.put("onedrive_token", mockToken)
+1981:                                                 }
+1982:                                                 "apple" -> {
+1983:                                                     appleToken = mockToken
+1984:                                                     SettingsStorage.put("apple_token", mockToken)
+1985:                                                 }
+1986:                                             }
+1987:                                             showLoginDialog = null
+1988:                                             statusMessage = "Successfully connected your " + when (provider) {
+1989:                                                 "google" -> "Google Drive"
+1990:                                                 "onedrive" -> "OneDrive"
+1991:                                                 else -> "iCloud"
+1992:                                             } + " account!"
+1993:                                             statusIsError = false
+1994:                                         }
+1995:                                     },
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

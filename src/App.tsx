@@ -82,36 +82,98 @@ export const App: React.FC = () => {
     setStrokes([]);
   };
 
+  const displayStreamRef = useRef<MediaStream | null>(null);
+
   const startRecording = async () => {
     try {
-      // Access Microphone Audio
-      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      // Capture Canvas Stream (30fps for smooth flicker-free capture)
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const canvasStream = canvas.captureStream(30);
+      let displayStream: MediaStream;
 
-      // Combine Canvas Video Track + Audio Track
-      const combinedStream = new MediaStream([
-        ...canvasStream.getVideoTracks(),
-        ...audioStream.getAudioTracks()
-      ]);
+      // Check for Electron IPC availability
+      const ipc = typeof window !== 'undefined' && (
+        (window as any).ipcRenderer || 
+        (typeof (window as any).require === 'function' ? (window as any).require('electron')?.ipcRenderer : null)
+      );
 
+      if (ipc) {
+        // 1. Force DXGI screen source ID from Electron main process
+        const sourceId = await ipc.invoke('get-desktop-sources');
+
+        if (!sourceId) {
+          throw new Error('Fatal: Electron failed to retrieve native screen source ID.');
+        }
+
+        // 2. Direct getUserMedia binding for GPU DXGI duplication
+        displayStream = await (navigator.mediaDevices as any).getUserMedia({
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: sourceId,
+              minFrameRate: 30,
+              maxFrameRate: 60
+            }
+          }
+        });
+      } else {
+        // Standard Browser (Playwright / Local Dev)
+        displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: 'browser' },
+          audio: true
+        });
+      }
+
+      displayStreamRef.current = displayStream;
+
+      // 2. Optionally request microphone audio if display stream doesn't include audio
+      let micStream: MediaStream | null = null;
+      if (displayStream.getAudioTracks().length === 0) {
+        try {
+          micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (e) {
+          console.warn('Microphone permission not granted, proceeding with video only.');
+        }
+      }
+
+      const audioTracks = [
+        ...displayStream.getAudioTracks(),
+        ...(micStream ? micStream.getAudioTracks() : [])
+      ];
+
+      const combinedTracks = [
+        ...displayStream.getVideoTracks(),
+        ...audioTracks
+      ];
+
+      const combinedStream = new MediaStream(combinedTracks);
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
         ? 'video/webm;codecs=vp9,opus'
+        : MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+        ? 'video/webm;codecs=vp8,opus'
         : 'video/webm';
 
-      const recorder = new MediaRecorder(combinedStream, { mimeType });
+      const recorder = new MediaRecorder(combinedStream, {
+        mimeType,
+        videoBitsPerSecond: 4000000
+      });
       recordedChunksRef.current = [];
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
+        if (e.data && e.data.size > 0) {
           recordedChunksRef.current.push(e.data);
         }
       };
 
       recorder.onstop = () => {
+        setIsRecording(false);
+
+        // Stop all tracks to release stream capture
+        combinedStream.getTracks().forEach((track) => track.stop());
+        if (micStream) micStream.getTracks().forEach((track) => track.stop());
+        if (displayStreamRef.current) {
+          displayStreamRef.current.getTracks().forEach((track) => track.stop());
+          displayStreamRef.current = null;
+        }
+
         const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         setRecordedVideoUrl(url);
@@ -126,7 +188,6 @@ export const App: React.FC = () => {
         const ss = String(now.getSeconds()).padStart(2, '0');
         const timestampFilename = `scripture-studio-recording-${YYYY}${MM}${DD}-${hh}${mm}${ss}.webm`;
 
-        // Auto-Save recording if setting is enabled
         if (autoSave) {
           const a = document.createElement('a');
           a.href = url;
@@ -136,25 +197,38 @@ export const App: React.FC = () => {
           document.body.removeChild(a);
           setHasDownloaded(true);
         }
-
-        // Stop audio tracks
-        audioStream.getTracks().forEach((track) => track.stop());
       };
+
+      // Handle user stopping stream from browser floating indicator
+      const videoTrack = displayStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.onended = () => {
+          if (recorder.state !== 'inactive') {
+            recorder.stop();
+          }
+        };
+      }
 
       recorder.start(100);
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
       setRecordingTime(0);
-    } catch (err) {
-      alert('Microphone/Screen permission access is required to record audio and video.');
-      console.error(err);
+    } catch (err: any) {
+      if (err?.name === 'NotAllowedError') {
+        console.log('Screen capture dismissed by user.');
+        return;
+      }
+      console.error('Failed to start recording:', err);
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
+    }
+    if (displayStreamRef.current) {
+      displayStreamRef.current.getTracks().forEach((track) => track.stop());
+      displayStreamRef.current = null;
     }
   };
 

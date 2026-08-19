@@ -43,6 +43,7 @@
       flex-direction: column;
       height: 100vh;
       width: 100vw;
+      position: relative;
     }
 
     .top-bar {
@@ -50,11 +51,10 @@
       align-items: center;
       justify-content: space-between;
       padding: 4px 14px;
-      height: 38px;
+      height: 36px;
       background-color: var(--bg-secondary);
       border-bottom: 1px solid var(--border-color);
       z-index: 100;
-      gap: 10px;
     }
 
     .studio-title {
@@ -62,7 +62,7 @@
       align-items: center;
       gap: 8px;
       font-family: 'Outfit', sans-serif;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 700;
       color: var(--accent-orange);
       white-space: nowrap;
@@ -71,7 +71,7 @@
     .studio-badge {
       background: rgba(255, 107, 53, 0.15);
       color: var(--accent-orange);
-      font-size: 0.65rem;
+      font-size: 0.62rem;
       padding: 2px 6px;
       border-radius: 8px;
       border: 1px solid rgba(255, 107, 53, 0.3);
@@ -80,45 +80,136 @@
       letter-spacing: 0.02em;
     }
 
-    .controls-group {
+    .hamburger-btn {
+      background: #242424;
+      color: var(--text-main);
+      border: 1px solid #3d3d3d;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 8px;
-      flex-wrap: nowrap;
+      gap: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
 
-    select, button, input {
-      font-family: inherit;
+    .hamburger-btn:hover {
+      background: #333333;
+      border-color: var(--accent-orange);
+      color: #ffffff;
+    }
+
+    /* Hamburger Dropdown Drawer */
+    .hamburger-menu {
+      position: absolute;
+      top: 42px;
+      right: 12px;
+      width: 320px;
+      background: rgba(26, 26, 26, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid #383838;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: fadeInDown 0.2s ease;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #2e2e2e;
+      padding-bottom: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--accent-orange);
+    }
+
+    .close-menu-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .close-menu-btn:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .menu-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .menu-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 6px;
     }
 
     .text-input, .select-input {
-      background: #242424;
+      background: #141414;
       color: #ffffff;
-      border: 1px solid #3d3d3d;
-      padding: 3px 8px;
-      border-radius: 5px;
-      font-size: 0.8rem;
-      height: 26px;
+      border: 1px solid #383838;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      width: 100%;
+    }
+
+    .text-input:focus, .select-input:focus {
+      outline: none;
+      border-color: var(--accent-orange);
     }
 
     .btn-action {
       background: #2a2a2a;
       color: #fff;
       border: 1px solid #444;
-      padding: 3px 10px;
-      border-radius: 5px;
+      padding: 5px 12px;
+      border-radius: 6px;
       cursor: pointer;
       font-size: 0.78rem;
       font-weight: 600;
-      height: 26px;
       display: flex;
       align-items: center;
-      gap: 4px;
+      justify-content: center;
+      gap: 6px;
       transition: background 0.15s;
+      white-space: nowrap;
     }
 
     .btn-action:hover {
-      background: #383838;
+      background: #3a3a3a;
+    }
+
+    .btn-action.full-width {
+      width: 100%;
     }
 
     .viewport-area {
@@ -161,36 +252,67 @@
       cursor: cell;
     }
 
+    /* Compact Bottom Toolbar */
     .bottom-toolbar {
       position: absolute;
-      bottom: 12px;
+      bottom: 8px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(24, 24, 24, 0.92);
+      gap: 4px;
+      background: rgba(20, 20, 20, 0.94);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      padding: 4px 12px;
-      border-radius: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
       z-index: 200;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+
+    .bottom-toolbar.hidden {
+      transform: translate(-50%, 150%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .show-toolbar-btn {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20, 20, 20, 0.9);
+      backdrop-filter: blur(10px);
+      color: var(--accent-orange);
+      border: 1px solid rgba(255, 107, 53, 0.4);
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 190;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      transition: background 0.15s ease;
+    }
+
+    .show-toolbar-btn:hover {
+      background: rgba(255, 107, 53, 0.2);
     }
 
     .tool-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      padding: 5px 8px;
-      border-radius: 16px;
-      font-size: 0.78rem;
+      padding: 3px 6px;
+      border-radius: 12px;
+      font-size: 0.72rem;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       transition: all 0.15s ease;
     }
 
@@ -202,25 +324,25 @@
     .tool-btn.active {
       color: #ffffff;
       background: var(--accent-orange);
-      box-shadow: 0 0 10px rgba(255, 107, 53, 0.4);
+      box-shadow: 0 0 8px rgba(255, 107, 53, 0.4);
     }
 
     .tool-btn.interact-active {
       color: #ffffff;
       background: var(--accent-blue);
-      box-shadow: 0 0 10px rgba(76, 201, 240, 0.4);
+      box-shadow: 0 0 8px rgba(76, 201, 240, 0.4);
     }
 
     .divider {
       width: 1px;
-      height: 18px;
+      height: 14px;
       background-color: rgba(255, 255, 255, 0.15);
       margin: 0 2px;
     }
 
     .color-dot {
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       border: 2px solid transparent;
       cursor: pointer;
@@ -234,21 +356,21 @@
     .color-dot.active {
       border-color: #ffffff;
       transform: scale(1.25);
-      box-shadow: 0 0 8px currentColor;
+      box-shadow: 0 0 6px currentColor;
     }
 
     .rec-btn {
       background: rgba(255, 77, 77, 0.15);
       color: #ff4d4d;
       border: 1px solid rgba(255, 77, 77, 0.4);
-      padding: 5px 12px;
-      border-radius: 16px;
-      font-size: 0.78rem;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .rec-btn.recording {
@@ -261,14 +383,14 @@
       background: rgba(255, 209, 102, 0.15);
       color: var(--accent-yellow);
       border: 1px solid rgba(255, 209, 102, 0.4);
-      padding: 5px 10px;
-      border-radius: 16px;
-      font-size: 0.78rem;
+      padding: 3px 6px;
+      border-radius: 12px;
+      font-size: 0.72rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       opacity: 0.4;
       pointer-events: none;
     }
@@ -281,6 +403,17 @@
     .pause-btn.paused {
       background: var(--accent-yellow);
       color: #121212;
+    }
+
+    .hide-btn {
+      color: var(--text-muted);
+      padding: 3px 6px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+    }
+
+    .hide-btn:hover {
+      color: #ff6b35;
     }
 
     @keyframes pulse {
@@ -320,28 +453,54 @@
         <span class="studio-badge">DEEP DIVE INTO SCRIPTURE</span>
       </div>
 
-      <div class="controls-group">
-        <input type="text" id="urlInput" class="text-input" placeholder="http://localhost/read/romans/1" value="http://localhost/read/romans/1" style="width: 260px;" />
-        <button class="btn-action" id="loadUrlBtn">🌐 Load Website</button>
+      <button id="hamburgerBtn" class="hamburger-btn" title="Open Navigation & Settings">
+        ☰ Menu
+      </button>
+    </div>
 
+    <!-- Hamburger Dropdown Menu Modal -->
+    <div id="hamburgerMenu" class="hamburger-menu" style="display: none;">
+      <div class="menu-header">
+        <span>Navigation & Settings</span>
+        <button id="closeMenuBtn" class="close-menu-btn" title="Close Menu">✖</button>
+      </div>
+
+      <div class="menu-section">
+        <label class="menu-label">Website URL</label>
+        <div class="input-group">
+          <input type="text" id="urlInput" class="text-input" placeholder="http://localhost/read/romans/1" value="http://localhost/read/romans/1" />
+          <button class="btn-action" id="loadUrlBtn">🌐 Load</button>
+        </div>
+      </div>
+
+      <div class="menu-section">
+        <label class="menu-label">Quick Presets</label>
         <select id="presetUrlSelect" class="select-input">
           <option value="http://localhost/read/romans/1">Local Interlinear Romans 1</option>
           <option value="http://localhost/read/hebrews/11">Local Interlinear Hebrews 11</option>
           <option value="https://www.desiringgod.org/labs">Desiring God Labs</option>
         </select>
+      </div>
 
-        <button class="btn-action" id="darkModeToggleBtn">🌙 Dark Filter</button>
+      <div class="menu-section">
+        <label class="menu-label">Viewport Appearance</label>
+        <button class="btn-action full-width" id="darkModeToggleBtn">🌙 Dark Filter</button>
       </div>
     </div>
 
-    <!-- Viewport Area -->
-    <div class="viewport-area">
+    <!-- Viewport Area (Only This Area Is Recorded) -->
+    <div class="viewport-area" id="viewportArea">
       <webview id="siteFrame" class="site-frame" src="http://localhost/read/romans/1" partition="persist:scripturestudio" allowpopups style="width: 100%; height: 100%; border: none;"></webview>
       <canvas id="drawCanvas" class="drawing-canvas"></canvas>
     </div>
 
-    <!-- Bottom Toolbar -->
-    <div class="bottom-toolbar">
+    <!-- Restore Floating Button when Toolbar Hidden -->
+    <button id="showToolbarBtn" class="show-toolbar-btn" style="display: none;" title="Show Tools Toolbar">
+      🛠️ Tools
+    </button>
+
+    <!-- Compact Bottom Toolbar -->
+    <div class="bottom-toolbar" id="bottomToolbar">
       <button class="tool-btn interact-active" id="interactToggleBtn" title="Interact Mode (Scroll / Click Links)">
         👆 Interact
       </button>
@@ -373,6 +532,12 @@
 
       <button class="rec-btn" id="recBtn">⏺️ Record Video</button>
       <button class="pause-btn" id="pauseBtn">⏸️ Pause</button>
+
+      <div class="divider"></div>
+
+      <button class="tool-btn hide-btn" id="hideToolbarBtn" title="Hide Toolbar">
+        🔽 Hide
+      </button>
     </div>
   </div>
 
@@ -403,6 +568,41 @@
     const siteFrame = document.getElementById('siteFrame');
     const interactToggleBtn = document.getElementById('interactToggleBtn');
 
+    // Hamburger Menu Logic
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    const closeMenuBtn = document.getElementById('closeMenuBtn');
+
+    hamburgerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hamburgerMenu.style.display = hamburgerMenu.style.display === 'none' ? 'flex' : 'none';
+    });
+
+    closeMenuBtn.addEventListener('click', () => {
+      hamburgerMenu.style.display = 'none';
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!hamburgerMenu.contains(e.target) && e.target !== hamburgerBtn) {
+        hamburgerMenu.style.display = 'none';
+      }
+    });
+
+    // Hide / Show Bottom Toolbar Logic
+    const bottomToolbar = document.getElementById('bottomToolbar');
+    const hideToolbarBtn = document.getElementById('hideToolbarBtn');
+    const showToolbarBtn = document.getElementById('showToolbarBtn');
+
+    hideToolbarBtn.addEventListener('click', () => {
+      bottomToolbar.classList.add('hidden');
+      showToolbarBtn.style.display = 'block';
+    });
+
+    showToolbarBtn.addEventListener('click', () => {
+      bottomToolbar.classList.remove('hidden');
+      showToolbarBtn.style.display = 'none';
+    });
+
     function resizeCanvas() {
       canvas.width = canvas.parentElement.clientWidth;
       canvas.height = canvas.parentElement.clientHeight;
@@ -425,11 +625,13 @@
 
     document.getElementById('loadUrlBtn').addEventListener('click', () => {
       loadWebsiteUrl(document.getElementById('urlInput').value);
+      hamburgerMenu.style.display = 'none';
     });
 
     document.getElementById('presetUrlSelect').addEventListener('change', (e) => {
       document.getElementById('urlInput').value = e.target.value;
       loadWebsiteUrl(e.target.value);
+      hamburgerMenu.style.display = 'none';
     });
 
     // Dark Mode Filter
@@ -604,16 +806,96 @@
     document.getElementById('undoBtn').addEventListener('click', () => { strokes.pop(); redraw(); });
     document.getElementById('clearBtn').addEventListener('click', () => { strokes = []; redraw(); });
 
-    // Video Recording Engine (Native Bridge Aware: React Native / Mobile Tablet vs Web Browser)
+    // Optimized Viewport-Only Video Recording Engine
     let mediaRecorder;
     let recordedChunks = [];
     let isRecording = false;
     let isPaused = false;
     let timerInterval;
+    let recordAnimationFrameId;
     let seconds = 0;
 
     const recBtn = document.getElementById('recBtn');
     const pauseBtn = document.getElementById('pauseBtn');
+
+    // Dual Buffers for High-Performance Compositing
+    const compositeCanvas = document.createElement('canvas');
+    const compositeCtx = compositeCanvas.getContext('2d', {
+      alpha: false,
+      desynchronized: true,
+      willReadFrequently: false
+    });
+
+    const offscreenComposite = document.createElement('canvas');
+    const offscreenCtx = offscreenComposite.getContext('2d', { alpha: false });
+
+    let isFramePending = false;
+    let lastCaptureTime = 0;
+    const CAPTURE_INTERVAL_MS = 1000 / 24; // Limit capturePage calls to 24 FPS to save CPU
+    let lastValidSiteImage = null; // Caches last valid webview capture to eliminate black frames
+
+    async function captureWebviewFrame() {
+      const now = performance.now();
+      if (isFramePending || !isRecording || isPaused) return;
+      if (now - lastCaptureTime < CAPTURE_INTERVAL_MS) return;
+
+      isFramePending = true;
+      lastCaptureTime = now;
+
+      try {
+        if (siteFrame && typeof siteFrame.capturePage === 'function') {
+          const image = await siteFrame.capturePage();
+          if (!image.isEmpty()) {
+            // Use NativeImage PNG Buffer directly to avoid costly Base64 string allocations
+            const blob = new Blob([image.toPNG()], { type: 'image/png' });
+            const bitmap = await createImageBitmap(blob);
+            
+            // Dispose old ImageBitmap from GPU VRAM before assigning new one
+            if (lastValidSiteImage) {
+              lastValidSiteImage.close();
+            }
+            lastValidSiteImage = bitmap;
+          }
+        }
+      } catch (err) {
+        console.warn('capturePage Frame Drop:', err);
+      } finally {
+        isFramePending = false;
+      }
+    }
+
+    function renderCompositeLoop() {
+      if (!isRecording) return;
+
+      if (!isPaused) {
+        // 1. Ensure internal dimensions match viewport
+        if (offscreenComposite.width !== canvas.width || offscreenComposite.height !== canvas.height) {
+          offscreenComposite.width = canvas.width;
+          offscreenComposite.height = canvas.height;
+          compositeCanvas.width = canvas.width;
+          compositeCanvas.height = canvas.height;
+        }
+
+        // 2. Draw Cached Site Frame (prevents black flash if capturePage skips)
+        if (lastValidSiteImage) {
+          offscreenCtx.drawImage(lastValidSiteImage, 0, 0, offscreenComposite.width, offscreenComposite.height);
+        } else {
+          offscreenCtx.fillStyle = '#121212';
+          offscreenCtx.fillRect(0, 0, offscreenComposite.width, offscreenComposite.height);
+        }
+
+        // 3. Layer User Canvas Annotations
+        offscreenCtx.drawImage(canvas, 0, 0, offscreenComposite.width, offscreenComposite.height);
+
+        // 4. Atomic Double-Buffer Transfer
+        compositeCtx.drawImage(offscreenComposite, 0, 0);
+
+        // Trigger async webview capture on next microtask tick
+        captureWebviewFrame();
+      }
+
+      recordAnimationFrameId = requestAnimationFrame(renderCompositeLoop);
+    }
 
     recBtn.addEventListener('click', async () => {
       if (isRecording) {
@@ -629,10 +911,15 @@
         pauseBtn.classList.remove('active', 'paused');
         pauseBtn.textContent = '⏸️ Pause';
         clearInterval(timerInterval);
+        cancelAnimationFrame(recordAnimationFrameId);
+        if (lastValidSiteImage) {
+          lastValidSiteImage.close();
+          lastValidSiteImage = null;
+        }
         return;
       }
 
-      // Check if running inside React Native / Mobile Tablet App
+      // Handle Mobile / React Native Bridge
       if (window.ReactNativeWebView) {
         window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'START_RECORDING' }));
         isRecording = true;
@@ -642,55 +929,60 @@
         timerInterval = setInterval(() => {
           if (!isPaused) {
             seconds++;
-            const m = String(Math.floor(seconds/60)).padStart(2, '0');
-            const s = String(seconds%60).padStart(2, '0');
+            const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
             recBtn.textContent = `⏹️ Stop ${m}:${s}`;
           }
         }, 1000);
         return;
       }
 
-      // Standard Web Browser Fallback (DisplayMedia)
+      // Electron / Browser Recording Logic
       try {
-        let videoTrack;
         let audioTrack;
-
         try {
-          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true }
+          });
           audioTrack = audioStream.getAudioTracks()[0];
         } catch (e) {
-          console.warn("Microphone access not granted.");
+          console.warn('Microphone access omitted.');
         }
 
-        let hasSavedRecording = false;
-        try {
-          const displayStream = await navigator.mediaDevices.getDisplayMedia({
-            video: { frameRate: { ideal: 30, max: 30 } },
-            audio: false
-          });
-          videoTrack = displayStream.getVideoTracks()[0];
-        } catch (e) {
-          alert("Screen capture permission was canceled.");
-          return;
-        }
+        // Initialize dimensions
+        compositeCanvas.width = canvas.width;
+        compositeCanvas.height = canvas.height;
+        offscreenComposite.width = canvas.width;
+        offscreenComposite.height = canvas.height;
 
-        const tracks = [videoTrack];
+        // Capture stream at steady 60 FPS directly from canvas context
+        const canvasStream = compositeCanvas.captureStream(60);
+        const tracks = canvasStream.getVideoTracks();
+
         if (audioTrack) tracks.push(audioTrack);
 
         const combinedStream = new MediaStream(tracks);
-        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+
+        // Select high-performance codec with low CPU overhead
+        const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+          ? 'video/webm;codecs=vp8,opus'
+          : (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+            ? 'video/webm;codecs=vp9,opus'
+            : 'video/webm');
+
+        mediaRecorder = new MediaRecorder(combinedStream, {
+          mimeType,
+          videoBitsPerSecond: 3000000 // 3 Mbps (50% lower CPU overhead, crisp text)
+        });
         recordedChunks = [];
 
         mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) {
-            recordedChunks.push(e.data);
-          }
+          if (e.data.size > 0) recordedChunks.push(e.data);
         };
 
         mediaRecorder.onstop = () => {
           const blob = new Blob(recordedChunks, { type: 'video/webm' });
           const url = URL.createObjectURL(blob);
-          hasSavedRecording = false;
           const now = new Date();
           const YYYY = now.getFullYear();
           const MM = String(now.getMonth() + 1).padStart(2, '0');
@@ -698,18 +990,18 @@
           const hh = String(now.getHours()).padStart(2, '0');
           const mm = String(now.getMinutes()).padStart(2, '0');
           const ss = String(now.getSeconds()).padStart(2, '0');
-          const filename = `scripture-studio-recording-${YYYY}${MM}${DD}-${hh}${mm}${ss}.webm`;
+          const filename = `scripture-studio-${YYYY}${MM}${DD}-${hh}${mm}${ss}.webm`;
+
           const previewVid = document.getElementById('previewVideo');
           previewVid.src = url;
           const downloadLink = document.getElementById('downloadLink');
           downloadLink.href = url;
           downloadLink.download = filename;
-          downloadLink.onclick = () => { hasSavedRecording = true; };
           document.getElementById('videoModal').style.display = 'flex';
-          tracks.forEach(t => t.stop());
+          tracks.forEach((t) => t.stop());
         };
 
-        mediaRecorder.start(1000);
+        mediaRecorder.start(100); // Small interval chunks for steady recording buffer
         isRecording = true;
         isPaused = false;
         seconds = 0;
@@ -718,16 +1010,19 @@
         pauseBtn.classList.remove('paused');
         pauseBtn.textContent = '⏸️ Pause';
 
+        // Kickoff smooth rendering pipeline
+        renderCompositeLoop();
+
         timerInterval = setInterval(() => {
           if (!isPaused) {
             seconds++;
-            const m = String(Math.floor(seconds/60)).padStart(2, '0');
-            const s = String(seconds%60).padStart(2, '0');
+            const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
             recBtn.textContent = `⏹️ Stop ${m}:${s}`;
           }
         }, 1000);
       } catch (err) {
-        alert("Unable to start video recording: " + err.message);
+        alert('Unable to start viewport video recording: ' + err.message);
       }
     });
 
@@ -756,10 +1051,6 @@
     });
 
     document.getElementById('closeModalBtn').addEventListener('click', () => {
-      if (typeof hasSavedRecording !== 'undefined' && !hasSavedRecording) {
-        const confirmDiscard = confirm("You have an unsaved video recording. Are you sure you want to close and discard it?");
-        if (!confirmDiscard) return;
-      }
       const previewVid = document.getElementById('previewVideo');
       if (previewVid) {
         previewVid.pause();

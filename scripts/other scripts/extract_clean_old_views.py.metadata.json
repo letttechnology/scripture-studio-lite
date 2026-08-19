@@ -1,0 +1,4 @@
+{
+  "summary": "Scratch script to parse Step 1262 and Step 1270 from transcript_full.jsonl, extracting only code lines matching the line number format to generate a completely clean App.kt.",
+  "updatedAt": "2026-07-04T00:04:58.675899500Z"
+}

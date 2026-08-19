@@ -1,6 +1,11 @@
 dist/
+release/
+scratch/
 node_modules/
 node_modules
+
+*.sql
+*.webm
 
 .env
 *.env

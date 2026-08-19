@@ -1,0 +1,4 @@
+{
+  "summary": "Scratch script to wrap App content in an explicit BoxScope lambda to fix Kotlin type inference issues.",
+  "updatedAt": "2026-07-02T21:56:13.345624100Z"
+}

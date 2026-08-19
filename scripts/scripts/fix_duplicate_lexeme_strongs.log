@@ -1,0 +1,4 @@
+LIVE RUN — fix_duplicate_lexeme_strongs.py
+DB: postgresql://postgres:letttech@localhost:5432/interlinear_bible_dev
+
+No duplicate strongs_ids found. Nothing to do.

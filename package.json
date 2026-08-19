@@ -1,7 +1,7 @@
 {
   "name": "scripture-studio",
   "private": true,
-  "version": "0.1.0-beta.2",
+  "version": "0.17.0",
   "description": "Scripture Studio LITE - Deep Dive Into Scripture",
   "author": "Scripture Studio",
   "main": "main.js",
@@ -14,12 +14,13 @@
     "version:minor": "npm version minor --no-git-tag-version",
     "version:major": "npm version major --no-git-tag-version",
     "version:beta": "npm version prerelease --preid=beta --no-git-tag-version",
-    "build:windows": "npm run clean && npx electron-builder --win",
-    "build:mac": "npm run clean && npx electron-builder --mac",
-    "build:linux": "npm run clean && npx electron-builder --linux",
-    "build:all": "npm run clean && npx electron-builder -mwl",
+    "build:windows": "npm run version:minor && npm run clean && npm run build && npx electron-builder --win",
+    "build:mac": "npm run version:minor && npm run clean && npm run build && npx electron-builder --mac",
+    "build:linux": "npm run version:minor && npm run clean && npm run build && npx electron-builder --linux",
+    "build:all": "npm run version:minor && npm run clean && npm run build && npx electron-builder -mwl",
     "start": "electron .",
-    "start:local": ".\\\\node_modules\\\\.bin\\\\electron ."
+    "start:local": ".\\\\node_modules\\\\.bin\\\\electron .",
+    "test:e2e": "playwright test"
   },
   "build": {
     "appId": "com.scripturestudio.lite",
@@ -63,6 +64,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.42.1",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
